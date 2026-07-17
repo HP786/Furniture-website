@@ -19,7 +19,13 @@ function displayCount(count: number) {
   return count > 99 ? "99+" : String(count);
 }
 
-export function Header({ collections }: { collections: NavCollection[] }) {
+export function Header({
+  collections,
+  accountUrl,
+}: {
+  collections: NavCollection[];
+  accountUrl: string;
+}) {
   const totalQuantity = useCart((state) => state.data.totalQuantity);
   const badge = displayCount(totalQuantity);
 
@@ -66,7 +72,7 @@ export function Header({ collections }: { collections: NavCollection[] }) {
             <img src="/icons/icon-search.svg" alt="" className="size-5" aria-hidden="true" />
           </Link>
           <a
-            href="#"
+            href={accountUrl}
             className="text-on-surface focus-visible:outline-accent inline-flex h-11 w-11 items-center justify-center rounded hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-opacity"
             aria-label="Account"
           >

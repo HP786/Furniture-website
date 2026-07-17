@@ -9,7 +9,7 @@ import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { Providers } from "./components/Providers";
 import { cartHandlers } from "./lib/cart-handlers";
-import { analyticsConsent, analyticsShop } from "./lib/shop";
+import { analyticsConsent, analyticsShop, getStoreDomain } from "./lib/shop";
 import { getStorefrontClient } from "./lib/storefront";
 
 import "./globals.css";
@@ -72,7 +72,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           analyticsConsent={analyticsConsent}
           enableTestTap={process.env.MOCK_SHOP === "1"}
         >
-          <Header collections={navCollections} />
+          <Header collections={navCollections} accountUrl={`https://${getStoreDomain()}/account/login`} />
           {children}
           <Footer />
           <CartDrawer />
