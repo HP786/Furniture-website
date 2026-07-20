@@ -10,7 +10,7 @@ const COLLECTIONS_PAGE_SIZE = 12;
 export const COLLECTIONS_QUERY = gql(
   `
     query CollectionsList($first: Int!, $after: String) {
-      collections(first: $first, after: $after) {
+      collections(first: $first, after: $after, query: "title:Furniture") {
         pageInfo {
           hasNextPage
           endCursor
