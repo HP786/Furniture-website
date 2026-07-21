@@ -157,6 +157,19 @@ export function CartSummary() {
       {cart.checkoutUrl ? (
         <a
           href={cart.checkoutUrl}
+          onClick={() => {
+            fetch("/api/track/checkout-started", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              keepalive: true,
+              body: JSON.stringify({
+                cartId: cart.id,
+                totalAmount: cart.cost.totalAmount?.amount,
+                currencyCode: cart.cost.totalAmount?.currencyCode,
+                lineCount: lines.length,
+              }),
+            }).catch(() => {});
+          }}
           className="rounded-button button-primary focus-visible:outline-accent inline-flex h-11 w-full items-center justify-center gap-2 px-4 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-[color,background-color,border-color,transform] motion-safe:active:scale-[0.97]"
         >
           Checkout
