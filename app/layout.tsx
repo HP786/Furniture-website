@@ -2,6 +2,7 @@ import { gql } from "@shopify/hydrogen";
 import type { Metadata } from "next";
 import Script from "next/script";
 import type { ReactNode } from "react";
+import { Analytics } from "@vercel/analytics/next";
 
 import { CartDrawer } from "./components/CartDrawer";
 import { ConsentBanner } from "./components/ConsentBanner";
@@ -78,6 +79,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <CartDrawer />
           <ConsentBanner forceShow={process.env.MOCK_SHOP === "1"} />
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
