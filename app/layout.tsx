@@ -8,8 +8,9 @@ import { ConsentBanner } from "./components/ConsentBanner";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { Providers } from "./components/Providers";
+import { getShopAnalyticsData } from "./lib/analytics-shop";
 import { cartHandlers } from "./lib/cart-handlers";
-import { analyticsConsent, analyticsShop, getStoreDomain } from "./lib/shop";
+import { analyticsConsent, getStoreDomain } from "./lib/shop";
 import { getStorefrontClient } from "./lib/storefront";
 
 import "./globals.css";
@@ -34,9 +35,10 @@ const FALLBACK_COLLECTIONS = [{ handle: "furniture", title: "Furniture" }];
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const storefrontClient = await getStorefrontClient();
-  const [{ data: cartData }, navResult] = await Promise.all([
+  const [{ data: cartData }, navResult, analyticsShop] = await Promise.all([
     cartHandlers.get({ storefrontClient }),
     storefrontClient.graphql(NAV_COLLECTIONS_QUERY),
+    getShopAnalyticsData(),
   ]);
   const navCollections = navResult.data?.collections.nodes.length
     ? navResult.data.collections.nodes

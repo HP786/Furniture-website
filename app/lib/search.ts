@@ -10,23 +10,19 @@ import { getStorefrontClient } from "./storefront";
 import { getRequestOrigin } from "./url";
 
 const SEARCH_PAGE_SIZE = 9;
-// Collection.products has no free-text `query` arg, so the Storefront API can't search
-// within a single collection directly. We search the whole catalog, then keep only
-// products that belong to the Furniture collection — this store's product surface
-// is scoped to that collection everywhere else too (see app/page.tsx, app/lib/collections.ts).
-const SEARCH_CANDIDATE_POOL_SIZE = 50;
 
-const FURNITURE_PRODUCT_IDS_QUERY = gql(`
-  query FurnitureProductIds {
-    collection(handle: "furniture") {
-      products(first: 250) {
-        nodes {
-          id
-        }
-      }
-    }
-  }
-`);
+// This storefront sells the Furniture collection only, but the store's catalog also
+// contains other collections (rugs, etc.) that share the same tag namespace. The
+// Storefront `search` root can't be scoped to a collection natively, so we scope it
+// with a query-syntax tag term: `<user query> AND tag:Furniture`. This keeps search
+// 100% server-side — native filtering, sorting, cursor pagination, and totalCount —
+// with no in-memory post-filtering. Requires every furniture product to carry the
+// `Furniture` tag (configured in Shopify admin).
+const SEARCH_SCOPE_TAG = "Furniture";
+
+function scopedQuery(searchTerm: string) {
+  return `${searchTerm} AND tag:${SEARCH_SCOPE_TAG}`;
+}
 
 export const SEARCH_QUERY = gql(
   `
@@ -173,37 +169,33 @@ export async function loadSearchPage({
 
   const browse = parseCollectionParams(searchParams);
   const sort = toSearchSort(browse.sortKey, browse.reverse);
+  const after = searchParams.get("after") || undefined;
   const storefront = await getStorefrontClient();
 
-  const [{ data }, { data: furnitureData }] = await Promise.all([
-    storefront.graphql(SEARCH_QUERY, {
-      variables: {
-        query: searchTerm,
-        first: SEARCH_CANDIDATE_POOL_SIZE,
-        after: undefined,
-        productFilters:
-          browse.filters.length > 0 ? (browse.filters as StorefrontApiProductFilter[]) : undefined,
-        sortKey: sort.sortKey,
-        reverse: sort.reverse || undefined,
-      },
-    }),
-    storefront.graphql(FURNITURE_PRODUCT_IDS_QUERY),
-  ]);
+  const { data } = await storefront.graphql(SEARCH_QUERY, {
+    variables: {
+      query: scopedQuery(searchTerm),
+      first: SEARCH_PAGE_SIZE,
+      after,
+      productFilters:
+        browse.filters.length > 0 ? (browse.filters as StorefrontApiProductFilter[]) : undefined,
+      sortKey: sort.sortKey,
+      reverse: sort.reverse || undefined,
+    },
+  });
 
   if (!data) throw new Response("Search unavailable", { status: 502 });
 
-  const furnitureIds = new Set(furnitureData?.collection?.products.nodes.map((node) => node.id));
   const search = data.search;
-  const products = search.nodes.filter(isProductNode).filter((product) => furnitureIds.has(product.id));
 
   return {
     performed: true,
     searchTerm,
-    products,
+    products: search.nodes.filter(isProductNode),
     availableFilters: search.productFilters,
-    pageInfo: EMPTY_PAGE_INFO,
+    pageInfo: search.pageInfo,
     currencyCode: data.shop.paymentSettings.currencyCode,
-    totalCount: products.length,
+    totalCount: search.totalCount,
     dataSearch: searchParams.toString(),
     origin,
   };

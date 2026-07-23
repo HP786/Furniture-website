@@ -46,15 +46,11 @@ export function ConsentBanner({ forceShow }: { forceShow: boolean }) {
   useEffect(() => {
     if (forceShow) return;
 
-    // Auto-accept instead of waiting for a visitor click, so consent still
-    // resolves with Shopify's Customer Privacy API (unblocking checkout
-    // analytics) without needing manual banner interaction on every visit.
-    const id = window.setTimeout(() => {
-      setTrackingConsent(
-        { analytics: true, marketing: true, preferences: true, sale_of_data: true },
-        () => setDismissed(true),
-      );
-    }, 0);
+    const customerPrivacy = window.Shopify?.customerPrivacy as
+      | { shouldShowBanner?: () => boolean }
+      | undefined;
+    const shouldShow = Boolean(customerPrivacy?.shouldShowBanner?.());
+    const id = window.setTimeout(() => setVisible(shouldShow), 0);
     return () => window.clearTimeout(id);
   }, [forceShow]);
 
