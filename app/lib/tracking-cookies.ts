@@ -4,6 +4,12 @@
 const UNIQUE_TOKEN_MAX_AGE = 3600 * 24 * 360;
 const VISIT_TOKEN_MAX_AGE = 1800;
 
+// Marks that _shopify_y/_s hold SERVER-issued values. Browsers that visited
+// before this fix shipped carry self-generated cookies (360-day lifetime)
+// that Shopify will never attribute — absence of the marker means those
+// cookies must be replaced, not trusted.
+const SEEDED_MARKER = "_tracking_seeded";
+
 function hasCookie(name: string): boolean {
   return document.cookie.split("; ").some((entry) => entry.startsWith(`${name}=`));
 }
@@ -21,7 +27,7 @@ function setCookie(name: string, value: string, maxAgeInSeconds: number) {
 // preserves whatever values already exist.
 export async function ensureServerIssuedTrackingCookies(): Promise<void> {
   if (typeof document === "undefined") return;
-  if (hasCookie("_shopify_y") && hasCookie("_shopify_s")) return;
+  if (hasCookie(SEEDED_MARKER) && hasCookie("_shopify_y") && hasCookie("_shopify_s")) return;
 
   try {
     const response = await fetch("/api/tracking-values", { cache: "no-store" });
@@ -32,6 +38,7 @@ export async function ensureServerIssuedTrackingCookies(): Promise<void> {
     };
     if (uniqueToken) setCookie("_shopify_y", uniqueToken, UNIQUE_TOKEN_MAX_AGE);
     if (visitToken) setCookie("_shopify_s", visitToken, VISIT_TOKEN_MAX_AGE);
+    if (uniqueToken && visitToken) setCookie(SEEDED_MARKER, "1", UNIQUE_TOKEN_MAX_AGE);
   } catch {
     // Non-fatal: analytics falls back to self-generated tokens.
   }

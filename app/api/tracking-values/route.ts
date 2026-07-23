@@ -30,7 +30,16 @@ export async function GET(request: NextRequest) {
     "Content-Type": "application/json",
     "X-Shopify-Storefront-Access-Token": token,
   };
-  const cookie = request.headers.get("cookie");
+  // Forward cookies so an existing _shopify_essential session keeps its
+  // identity — but never the legacy _shopify_y/_s pair: Shopify echoes any
+  // client-provided legacy values back, so forwarding a stale self-generated
+  // pair (set by pre-fix versions of this site) would just return the same
+  // unattributable tokens instead of server-issued ones.
+  const cookie = request.headers
+    .get("cookie")
+    ?.split("; ")
+    .filter((entry) => !/^_shopify_[ys]=/.test(entry))
+    .join("; ");
   if (cookie) headers.cookie = cookie;
 
   let upstream: Response;
