@@ -73,11 +73,17 @@ export const analyticsConsent = {
   // can resolve this store's consent settings from a headless domain — without
   // it the browser-side consent/tracking-token requests carry no store identity.
   publicStorefrontAccessToken: process.env.PUBLIC_STOREFRONT_API_TOKEN,
-  // Domain the Customer Privacy API resolves consent/tracking cookies against.
-  // Without this, Hydrogen's initConsent falls back to window.location.host —
-  // the vercel.app domain — which doesn't match the store's checkout domain,
-  // so consent/tracking-token state never lines up with what checkout sees.
-  consentDomain: process.env.PUBLIC_CHECKOUT_DOMAIN || getStoreDomain(),
+  // IMPORTANT: leave consentDomain unset so the browser bootstraps consent and
+  // tracking values through the SAME-ORIGIN SFAPI proxy (/api/unstable/graphql.json,
+  // served by proxy.ts). Same-origin is required for the browser to receive the
+  // server-issued _shopify_essential/_shopify_analytics cookies (host-only
+  // Set-Cookie) and to read the Server-Timing tracking tokens — legacy
+  // _shopify_y/_s attribution was retired by Shopify on 2026-04-30, so pointing
+  // this at the myshopify.com domain (cross-origin: cookies rejected, timing
+  // unreadable) silently kills session attribution for cart events.
+  ...(process.env.PUBLIC_CHECKOUT_DOMAIN
+    ? { consentDomain: process.env.PUBLIC_CHECKOUT_DOMAIN }
+    : {}),
 } as const;
 
 export function useMockShop(
