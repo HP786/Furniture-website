@@ -15,34 +15,69 @@
 
 export const storefrontConfig = {
   storeDomain: "hydrogen-preview.myshopify.com",
-  i18n: { country: "US", language: "EN" },
+  i18n: { country: "AU", language: "EN" },
 } as const;
 
 // Analytics shop identity. The Hydrogen sales channel populates SHOP_ID and
 // PUBLIC_STOREFRONT_ID for a linked store (e.g. via `shopify hydrogen env pull`,
-// or set them in `.env` / your host's project env). We read those and fall back
-// to the public Hydrogen Preview store so a fresh, tokenless deploy still renders.
+// or set them in `.env` / your host's project env). MOCK_SHOP=1 still falls back
+// to the public Hydrogen Preview store's demo IDs; outside of that, a missing
+// value in production is a hard failure rather than a silent demo-store ID,
+// since the wrong subchannel/shop ID makes analytics attribute to the wrong store.
+const DEMO_SHOP_GID = "gid://shopify/Shop/55145660472";
+const DEMO_HYDROGEN_SUBCHANNEL_ID = "1000014875";
+
 function toShopGid(shopId: string): string {
   return shopId.startsWith("gid://") ? shopId : `gid://shopify/Shop/${shopId}`;
 }
 
+function resolveShopId(): string {
+  if (process.env.SHOP_ID) return toShopGid(process.env.SHOP_ID);
+  if (process.env.MOCK_SHOP === "1") return DEMO_SHOP_GID;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "SHOP_ID is required in production. Set it in your environment (see .env.example), " +
+        "or run with MOCK_SHOP=1 for the tokenless mock.shop demo.",
+    );
+  }
+  return DEMO_SHOP_GID;
+}
+
+function resolveHydrogenSubchannelId(): string {
+  if (process.env.PUBLIC_STOREFRONT_ID) return process.env.PUBLIC_STOREFRONT_ID;
+  if (process.env.MOCK_SHOP === "1") return DEMO_HYDROGEN_SUBCHANNEL_ID;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "PUBLIC_STOREFRONT_ID is required in production. Set it in your environment (see .env.example), " +
+        "or run with MOCK_SHOP=1 for the tokenless mock.shop demo.",
+    );
+  }
+  return DEMO_HYDROGEN_SUBCHANNEL_ID;
+}
+
 export const analyticsShop = {
-  shopId: process.env.SHOP_ID
-    ? toShopGid(process.env.SHOP_ID)
-    : "gid://shopify/Shop/55145660472",
+  shopId: resolveShopId(),
   acceptedLanguage: "EN",
   currency: "USD",
-  hydrogenSubchannelId: process.env.PUBLIC_STOREFRONT_ID || "1000014875",
+  hydrogenSubchannelId: resolveHydrogenSubchannelId(),
 } as const;
 
 export const analyticsConsent = {
-  mode: "custom-banner",
-  country: "US",
+  // Store-wide cookie banner is disabled in every region, so there is no click
+  // to wait for. "custom-banner" makes Hydrogen buffer events for a 10s timeout
+  // expecting a banner interaction that never happens; "no-banner" cuts that to 3s.
+  mode: "no-banner",
+  country: "AU",
   language: "EN",
   // Public (32-char) Storefront API token. Required so the Customer Privacy API
   // can resolve this store's consent settings from a headless domain — without
   // it the browser-side consent/tracking-token requests carry no store identity.
   publicStorefrontAccessToken: process.env.PUBLIC_STOREFRONT_API_TOKEN,
+  // Domain the Customer Privacy API resolves consent/tracking cookies against.
+  // Without this, Hydrogen's initConsent falls back to window.location.host —
+  // the vercel.app domain — which doesn't match the store's checkout domain,
+  // so consent/tracking-token state never lines up with what checkout sees.
+  consentDomain: process.env.PUBLIC_CHECKOUT_DOMAIN || getStoreDomain(),
 } as const;
 
 export function useMockShop(

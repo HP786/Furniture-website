@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import type { ReactNode } from "react";
 
+import { AnalyticsDebugOverlay } from "./components/AnalyticsDebugOverlay";
 import { CartDrawer } from "./components/CartDrawer";
 import { ConsentBanner } from "./components/ConsentBanner";
 import { Footer } from "./components/Footer";
@@ -43,6 +44,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const navCollections = navResult.data?.collections.nodes.length
     ? navResult.data.collections.nodes
     : FALLBACK_COLLECTIONS;
+  const analyticsDebug = process.env.PUBLIC_ANALYTICS_DEBUG === "1";
 
   return (
     <html lang="en">
@@ -72,13 +74,14 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           cart={cartData.cart ?? undefined}
           analyticsShop={analyticsShop}
           analyticsConsent={analyticsConsent}
-          enableTestTap={process.env.MOCK_SHOP === "1"}
+          enableTestTap={analyticsDebug}
         >
           <Header collections={navCollections} accountUrl={`https://${getStoreDomain()}/account/login`} />
           {children}
           <Footer />
           <CartDrawer />
           <ConsentBanner forceShow={process.env.MOCK_SHOP === "1"} />
+          {analyticsDebug ? <AnalyticsDebugOverlay /> : null}
         </Providers>
       </body>
     </html>
