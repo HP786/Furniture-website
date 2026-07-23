@@ -39,6 +39,10 @@ export const analyticsConsent = {
   mode: "custom-banner",
   country: "US",
   language: "EN",
+  // Public (32-char) Storefront API token. Required so the Customer Privacy API
+  // can resolve this store's consent settings from a headless domain — without
+  // it the browser-side consent/tracking-token requests carry no store identity.
+  publicStorefrontAccessToken: process.env.PUBLIC_STOREFRONT_API_TOKEN,
 } as const;
 
 export function useMockShop(
