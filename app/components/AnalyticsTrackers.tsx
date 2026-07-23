@@ -11,6 +11,7 @@ import {
   getAnalyticsShop,
 } from "../lib/analytics";
 import { useCart } from "../lib/cart";
+import { ensureServerIssuedTrackingCookies } from "../lib/tracking-cookies";
 
 declare global {
   interface Window {
@@ -105,25 +106,35 @@ export function AnalyticsTracker({
   const pageKey = `${pathname}?${searchParams?.toString() ?? ""}`;
 
   useEffect(() => {
-    configureAnalytics(shop, consent);
-    const analytics = getAnalytics();
-    if (!analytics) return;
+    let cancelled = false;
+    let unsubs: Array<() => void> = [];
 
-    const unsubs = enableTestTap
-      ? TEST_TAP_EVENTS.map((event) =>
-          analytics.subscribe(event, (payload) => {
-            window.__analyticsEvents ??= [];
-            window.__analyticsEvents.push({ event, payload: payload as Record<string, unknown> });
-          }),
-        )
-      : [];
+    // Seed server-issued tracking cookies BEFORE the bus initializes, so its
+    // consent bootstrap and every analytics event reuse the same server-known
+    // session instead of racing it with self-generated tokens.
+    void ensureServerIssuedTrackingCookies().then(() => {
+      if (cancelled) return;
+      configureAnalytics(shop, consent);
+      const analytics = getAnalytics();
+      if (!analytics) return;
 
-    analytics.publish(AnalyticsEvent.PAGE_VIEWED, {
-      url: window.location.href,
-      shop,
+      unsubs = enableTestTap
+        ? TEST_TAP_EVENTS.map((event) =>
+            analytics.subscribe(event, (payload) => {
+              window.__analyticsEvents ??= [];
+              window.__analyticsEvents.push({ event, payload: payload as Record<string, unknown> });
+            }),
+          )
+        : [];
+
+      analytics.publish(AnalyticsEvent.PAGE_VIEWED, {
+        url: window.location.href,
+        shop,
+      });
     });
 
     return () => {
+      cancelled = true;
       for (const unsub of unsubs) unsub();
     };
   }, [pageKey, shop, consent, enableTestTap]);
