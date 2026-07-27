@@ -34,6 +34,9 @@ const NAV_COLLECTIONS_QUERY = gql(`
 
 const FALLBACK_COLLECTIONS: { handle: string; title: string }[] = [];
 
+// Always surface a "Shop All" entry point (whole catalogue) at the start of the nav.
+const SHOP_ALL_NAV = { handle: "shop-all", title: "Shop All" };
+
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const storefrontClient = await getStorefrontClient();
   const [{ data: cartData }, navResult, analyticsShop] = await Promise.all([
@@ -41,9 +44,14 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     storefrontClient.graphql(NAV_COLLECTIONS_QUERY),
     getShopAnalyticsData(),
   ]);
-  const navCollections = navResult.data?.collections.nodes.length
+  const loadedCollections = navResult.data?.collections.nodes.length
     ? navResult.data.collections.nodes
     : FALLBACK_COLLECTIONS;
+  // Prepend "Shop All" and drop it from the loaded set to avoid a duplicate nav entry.
+  const navCollections = [
+    SHOP_ALL_NAV,
+    ...loadedCollections.filter((collection) => collection.handle !== SHOP_ALL_NAV.handle),
+  ];
   const analyticsDebug = process.env.PUBLIC_ANALYTICS_DEBUG === "1";
 
   return (
