@@ -23,14 +23,12 @@ const HERO = {
 export const HOME_QUERY = gql(
   `
     query Home {
-      collection(handle: "furniture") {
-        products(first: 8, sortKey: BEST_SELLING) {
-          nodes {
-            ...ProductCard
-          }
+      products(first: 8, sortKey: BEST_SELLING) {
+        nodes {
+          ...ProductCard
         }
       }
-      collections(first: 3, query: "title:Furniture") {
+      collections(first: 3) {
         nodes {
           ...CollectionCard
         }
@@ -53,7 +51,7 @@ async function loadHomePage(): Promise<HomePageData> {
   const home = data as HomeQuery | null | undefined;
 
   return {
-    featuredProducts: home?.collection?.products.nodes ?? [],
+    featuredProducts: home?.products.nodes ?? [],
     featuredCollections: home?.collections.nodes ?? [],
   };
 }
