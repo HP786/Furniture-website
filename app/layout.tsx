@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
 const NAV_COLLECTIONS_QUERY = gql(`
   query NavCollections {
-    collections(first: 5, query: "title:Furniture") {
+    collections(first: 5) {
       nodes {
         handle
         title
@@ -32,7 +32,7 @@ const NAV_COLLECTIONS_QUERY = gql(`
   }
 `);
 
-const FALLBACK_COLLECTIONS = [{ handle: "furniture", title: "Furniture" }];
+const FALLBACK_COLLECTIONS: { handle: string; title: string }[] = [];
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const storefrontClient = await getStorefrontClient();

@@ -11,19 +11,6 @@ import { getRequestOrigin } from "./url";
 
 const SEARCH_PAGE_SIZE = 9;
 
-// This storefront sells the Furniture collection only, but the store's catalog also
-// contains other collections (rugs, etc.) that share the same tag namespace. The
-// Storefront `search` root can't be scoped to a collection natively, so we scope it
-// with a query-syntax tag term: `<user query> AND tag:Furniture`. This keeps search
-// 100% server-side — native filtering, sorting, cursor pagination, and totalCount —
-// with no in-memory post-filtering. Requires every furniture product to carry the
-// `Furniture` tag (configured in Shopify admin).
-const SEARCH_SCOPE_TAG = "Furniture";
-
-function scopedQuery(searchTerm: string) {
-  return `${searchTerm} AND tag:${SEARCH_SCOPE_TAG}`;
-}
-
 export const SEARCH_QUERY = gql(
   `
     query SearchPage(
@@ -174,7 +161,7 @@ export async function loadSearchPage({
 
   const { data } = await storefront.graphql(SEARCH_QUERY, {
     variables: {
-      query: scopedQuery(searchTerm),
+      query: searchTerm,
       first: SEARCH_PAGE_SIZE,
       after,
       productFilters:

@@ -167,26 +167,6 @@ function filterValueInputParamEntries(input: unknown): HiddenInput[] {
   );
 }
 
-function uncheckSiblings(input: HTMLInputElement) {
-  const form = input.form;
-  if (!form) return;
-
-  for (const element of Array.from(form.elements)) {
-    if (
-      element instanceof HTMLInputElement &&
-      element !== input &&
-      element.type === "checkbox" &&
-      element.name === input.name
-    ) {
-      element.checked = false;
-    }
-  }
-}
-
-function isMutuallyExclusive(filter: AvailableFilter, inputName: string) {
-  return filter.type === "BOOLEAN" || inputName === "filter.v.availability";
-}
-
 function CheckIcon() {
   return (
     <svg
@@ -286,12 +266,7 @@ function ListFacet({ filter, state }: { filter: AvailableFilter; state: Collecti
                   value={entry.value}
                   className="sr-only"
                   defaultChecked={isFilterInputActive(state.filters, input)}
-                  onChange={(event) => {
-                    if (event.currentTarget.checked && isMutuallyExclusive(filter, entry.name)) {
-                      uncheckSiblings(event.currentTarget);
-                    }
-                    requestFormSubmit(event);
-                  }}
+                  onChange={requestFormSubmit}
                 />
                 <span className="filter-checkbox shrink-0">
                   <CheckIcon />
@@ -347,12 +322,7 @@ function ColorSwatchFacet({ filter, state }: { filter: AvailableFilter; state: C
                   value={entry.value}
                   className="sr-only"
                   defaultChecked={isFilterInputActive(state.filters, input)}
-                  onChange={(event) => {
-                    if (event.currentTarget.checked && isMutuallyExclusive(filter, entry.name)) {
-                      uncheckSiblings(event.currentTarget);
-                    }
-                    requestFormSubmit(event);
-                  }}
+                  onChange={requestFormSubmit}
                 />
                 <span className="filter-swatch shrink-0" style={style}>
                   <CheckIcon />
