@@ -54,10 +54,10 @@ export const PREDICTIVE_SEARCH_QUERY = gql(`
 // Shopify rejects limits outside 1–10.
 const PREDICTIVE_LIMIT = 5;
 
+// An empty `term` is valid: Shopify answers it with default suggestions (best
+// sellers and top collections), so the box has something to show on focus.
 export async function loadPredictiveSearch(term: string): Promise<PredictiveSearchResults> {
   const query = term.trim();
-  if (!query) return EMPTY_PREDICTIVE_RESULTS;
-
   const storefront = await getStorefrontClient();
   const { data } = await storefront.graphql(PREDICTIVE_SEARCH_QUERY, {
     variables: { query, limit: PREDICTIVE_LIMIT },

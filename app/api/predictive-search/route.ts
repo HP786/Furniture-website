@@ -1,18 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { EMPTY_PREDICTIVE_RESULTS, loadPredictiveSearch } from "../../lib/predictive-search";
+import { loadPredictiveSearch } from "../../lib/predictive-search";
 
 // Type-ahead endpoint for the search box. Runs server-side so the private
 // Storefront token and buyer IP stay off the client.
+//
+// An empty `q` is passed straight through rather than short-circuited: Shopify
+// answers the empty query with default suggestions (best sellers and top
+// collections), which is what the box shows before anything is typed.
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const term = (request.nextUrl.searchParams.get("q") ?? "").trim();
-  if (!term) {
-    return NextResponse.json(EMPTY_PREDICTIVE_RESULTS, {
-      headers: { "cache-control": "no-store" },
-    });
-  }
 
   try {
     const results = await loadPredictiveSearch(term);

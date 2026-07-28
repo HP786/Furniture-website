@@ -12,7 +12,6 @@ import {
 } from "../lib/predictive-search-types";
 
 const DEBOUNCE_MS = 200;
-const MIN_QUERY_LENGTH = 2;
 
 type Option = { key: string; href: string; label: string };
 
@@ -52,8 +51,8 @@ export function SearchAutocomplete({
   const [term, setTerm] = useState(defaultValue);
   // Results are stored alongside the term they belong to, so what's on screen
   // always matches what's in the box — no stale suggestions during typing.
-  const [fetched, setFetched] = useState<{ term: string; results: PredictiveSearchResults }>({
-    term: "",
+  const [fetched, setFetched] = useState<{ term: string | null; results: PredictiveSearchResults }>({
+    term: null,
     results: EMPTY_PREDICTIVE_RESULTS,
   });
   const [open, setOpen] = useState(false);
@@ -62,16 +61,19 @@ export function SearchAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const query = term.trim();
+  const isDefaultSuggestions = query === "";
   const results = fetched.term === query ? fetched.results : EMPTY_PREDICTIVE_RESULTS;
-  const loading = query.length >= MIN_QUERY_LENGTH && fetched.term !== query;
+  const loading = fetched.term !== query;
 
   const options = toOptions(results);
   const hasResults = options.length > 0;
 
-  // Debounced fetch. Each keystroke aborts the in-flight request so a slow
-  // early response can never overwrite a newer one.
+  // Debounced fetch, including the empty query — Shopify answers that one with
+  // default suggestions, so opening the box already has something to show. Each
+  // keystroke aborts the in-flight request so a slow early response can never
+  // overwrite a newer one.
   useEffect(() => {
-    if (query.length < MIN_QUERY_LENGTH) return;
+    if (!open) return;
 
     const controller = new AbortController();
     const timer = setTimeout(() => {
@@ -87,7 +89,7 @@ export function SearchAutocomplete({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query]);
+  }, [query, open]);
 
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {
@@ -126,7 +128,7 @@ export function SearchAutocomplete({
   }
 
   const activeOption = activeIndex >= 0 && activeIndex < options.length ? options[activeIndex] : null;
-  const showPanel = open && query.length >= MIN_QUERY_LENGTH;
+  const showPanel = open;
 
   return (
     <div ref={containerRef} className="relative">
@@ -227,7 +229,7 @@ export function SearchAutocomplete({
           ) : null}
 
           {results.products.length > 0 ? (
-            <Section title="Products">
+            <Section title={isDefaultSuggestions ? "Popular right now" : "Products"}>
               {results.products.map((product) => {
                 const index = options.findIndex((o) => o.key === `product:${product.id}`);
                 return (
@@ -270,7 +272,7 @@ export function SearchAutocomplete({
           ) : null}
 
           {results.collections.length > 0 ? (
-            <Section title="Collections">
+            <Section title={isDefaultSuggestions ? "Browse collections" : "Collections"}>
               {results.collections.map((collection) => {
                 const index = options.findIndex((o) => o.key === `collection:${collection.id}`);
                 return (
@@ -289,7 +291,8 @@ export function SearchAutocomplete({
             </Section>
           ) : null}
 
-          <div className="border-border border-t">
+          {/* No "view all" for the default suggestions — there's no term to view. */}
+          <div className={`border-border border-t ${isDefaultSuggestions ? "hidden" : ""}`}>
             <Link
               href={`/search?q=${encodeURIComponent(query)}`}
               onClick={close}
