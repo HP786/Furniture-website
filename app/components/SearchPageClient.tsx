@@ -17,6 +17,7 @@ import {
   useLoadMore,
 } from "./CollectionBrowse";
 import { ProductCard } from "./ProductCard";
+import { SearchAutocomplete } from "./SearchAutocomplete";
 
 const FILTER_DRAWER_ID = "search-filter-drawer";
 const SEARCH_DEFAULT_SORT_VALUE = SEARCH_SORT_OPTIONS[0].value;
@@ -75,37 +76,7 @@ function SearchHeader({ searchTerm, origin }: { searchTerm: string; origin: stri
       </nav>
       <div className="mb-8 max-w-2xl">
         <h1 className="type-display text-on-surface mb-6">Search</h1>
-        <form action="/search" method="get" role="search" className="space-y-2">
-          <label htmlFor="search-q" className="type-body-sm text-on-surface block font-medium">
-            Search
-          </label>
-          <div className="relative">
-            <img
-              src="/icons/icon-search.svg"
-              alt=""
-              className="pointer-events-none absolute start-3 top-1/2 size-5 -translate-y-1/2"
-              aria-hidden="true"
-            />
-            <input
-              id="search-q"
-              type="search"
-              name="q"
-              defaultValue={searchTerm}
-              className="ps-10 pe-12"
-              placeholder="Search products"
-              autoComplete="off"
-            />
-            {searchTerm ? (
-              <Link
-                href="/search"
-                aria-label="Clear search"
-                className="button-icon focus-visible:outline-accent absolute end-1 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                <img src="/icons/icon-x.svg" alt="" className="size-5" aria-hidden="true" />
-              </Link>
-            ) : null}
-          </div>
-        </form>
+        <SearchAutocomplete defaultValue={searchTerm} />
       </div>
     </>
   );

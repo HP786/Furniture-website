@@ -118,10 +118,16 @@ export const PRODUCT_QUERY = gql(
           ...ProductVariantFields
         }
       }
-      relatedProducts: products(first: 5) {
-        nodes {
-          ...ProductCard
-        }
+      # Shopify-generated recommendations. Both intents honour the rules and
+      # manual overrides configured in the Search & Discovery app.
+      relatedProducts: productRecommendations(productHandle: $handle, intent: RELATED) {
+        ...ProductCard
+      }
+      complementaryProducts: productRecommendations(
+        productHandle: $handle
+        intent: COMPLEMENTARY
+      ) {
+        ...ProductCard
       }
     }
   `,
@@ -159,5 +165,11 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
   const data = await loadProduct(handle, await searchParams);
   if (!data?.product) notFound();
 
-  return <ProductDetails product={data.product} relatedProducts={data.relatedProducts.nodes} />;
+  return (
+    <ProductDetails
+      product={data.product}
+      relatedProducts={data.relatedProducts ?? []}
+      complementaryProducts={data.complementaryProducts ?? []}
+    />
+  );
 }

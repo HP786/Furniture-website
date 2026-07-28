@@ -16,7 +16,7 @@ import { ProductCard } from "./ProductCard";
 type ProductQuery = StorefrontApi.ResultOf<typeof PRODUCT_QUERY>;
 type ProductData = NonNullable<ProductQuery["product"]>;
 type VariantData = NonNullable<ProductData["selectedOrFirstAvailableVariant"]>;
-type RelatedProduct = ProductQuery["relatedProducts"]["nodes"][number];
+type RelatedProduct = NonNullable<ProductQuery["relatedProducts"]>[number];
 
 const { ProductProvider, useProductForm } = createProductComponents<ProductData>();
 
@@ -433,13 +433,18 @@ function ProductInfo({ product }: { product: ProductData }) {
 export function ProductDetails({
   product,
   relatedProducts,
+  complementaryProducts,
 }: {
   product: ProductData;
   relatedProducts: RelatedProduct[];
+  complementaryProducts: RelatedProduct[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const related = relatedProducts.filter((item) => item.handle !== product.handle).slice(0, 4);
+  const complementary = complementaryProducts
+    .filter((item) => item.handle !== product.handle)
+    .slice(0, 4);
 
   return (
     <ProductProvider
@@ -461,29 +466,39 @@ export function ProductDetails({
             <ProductInfo product={product} />
           </div>
         </section>
-        {related.length > 0 ? (
-          <section className="py-4">
-            <div className="border-border border-t pt-12">
-              <h2 className="type-heading-xl max-w-page px-margin mx-auto mb-8">
-                You may also like
-              </h2>
-              <div className="max-w-page px-margin mx-auto contain-paint">
-                <ul
-                  role="list"
-                  className="grid grid-cols-1 gap-x-1 gap-y-10 md:grid-cols-2 lg:grid-cols-4"
-                >
-                  {related.map((relatedProduct, index) => (
-                    <li key={relatedProduct.id}>
-                      <ProductCard product={relatedProduct} priority={index === 0} />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </section>
-        ) : null}
+        {/* "Pair it with" is Search & Discovery's COMPLEMENTARY intent — it only
+            renders once complementary products are configured for this product. */}
+        <RecommendationShelf title="Pair it with" products={complementary} />
+        <RecommendationShelf title="You may also like" products={related} />
       </main>
     </ProductProvider>
+  );
+}
+
+function RecommendationShelf({
+  title,
+  products,
+}: {
+  title: string;
+  products: RelatedProduct[];
+}) {
+  if (products.length === 0) return null;
+
+  return (
+    <section className="py-4">
+      <div className="border-border border-t pt-12">
+        <h2 className="type-heading-xl max-w-page px-margin mx-auto mb-8">{title}</h2>
+        <div className="max-w-page px-margin mx-auto contain-paint">
+          <ul role="list" className="grid grid-cols-1 gap-x-1 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
+            {products.map((product, index) => (
+              <li key={product.id}>
+                <ProductCard product={product} priority={index === 0} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
   );
 }
 
