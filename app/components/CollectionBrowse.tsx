@@ -209,8 +209,10 @@ function FacetShell({
 }) {
   const bodyId = `${idPrefix}-filter-body-${filter.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
+  // Collapsed by default — the count badge on the summary keeps any active
+  // selections visible without the group being expanded.
   return (
-    <details className="group block" open>
+    <details className="group block">
       <summary
         className="marker-hidden text-on-surface min-h-touch-target flex cursor-pointer items-center justify-between py-4 text-sm font-medium motion-safe:transition motion-safe:active:scale-[0.97]"
         aria-controls={bodyId}
