@@ -38,7 +38,29 @@ function getMockBuyerIp(headers: Pick<Headers, "get">): string {
   }
 }
 
+// Origin check for state-changing requests, covering the cart mutation endpoint
+// (/api/cart) and the SFAPI proxy before either is dispatched. The cart cookie
+// is SameSite=Lax, which already stops most cross-site POSTs, but Lax is a
+// cookie-delivery rule rather than a server-side check and Chrome still allows
+// cross-site POSTs within two minutes of a cookie being set. A request with no
+// Origin header is not a browser cross-site form post, so it is left alone.
+function isCrossOriginWrite(request: NextRequest): boolean {
+  if (request.method === "GET" || request.method === "HEAD") return false;
+  const origin = request.headers.get("origin");
+  if (!origin) return false;
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  try {
+    return new URL(origin).host !== host;
+  } catch {
+    return true;
+  }
+}
+
 export async function proxy(request: NextRequest) {
+  if (isCrossOriginWrite(request)) {
+    return new NextResponse("Cross-origin request blocked", { status: 403 });
+  }
+
   const requestContext = createStorefrontRequestContext(request);
   const storefrontClient = createStorefrontClient({
     type: "private",
@@ -99,7 +121,13 @@ export async function proxy(request: NextRequest) {
   requestContext.applyResponseHeaders(response.headers);
 
   if (seeded?.uniqueToken && seeded.visitToken) {
-    const options = { path: "/", sameSite: "lax" as const };
+    // `secure` is conditional so plain-http localhost dev still receives these;
+    // browsers drop Secure cookies on insecure origins.
+    const options = {
+      path: "/",
+      sameSite: "lax" as const,
+      secure: process.env.NODE_ENV === "production",
+    };
     response.cookies.set("_shopify_y", seeded.uniqueToken, {
       ...options,
       maxAge: UNIQUE_TOKEN_MAX_AGE,

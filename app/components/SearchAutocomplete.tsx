@@ -217,11 +217,9 @@ export function SearchAutocomplete({
                       className="size-4 shrink-0 opacity-60"
                       aria-hidden="true"
                     />
-                    {/* styledText is Shopify-generated markup that <b>-wraps the matched span. */}
-                    <span
-                      className="type-body-sm text-on-surface truncate"
-                      dangerouslySetInnerHTML={{ __html: suggestion.styledText }}
-                    />
+                    <span className="type-body-sm text-on-surface truncate">
+                      <HighlightedSuggestion text={suggestion.text} query={query} />
+                    </span>
                   </Row>
                 );
               })}
@@ -304,6 +302,24 @@ export function SearchAutocomplete({
         </div>
       ) : null}
     </div>
+  );
+}
+
+// Bolds the matched span without rendering Shopify's `styledText` HTML.
+// `styledText` wraps the shopper's own query in markup, and whether Shopify
+// escapes that query could not be confirmed against this store (query
+// suggestions stay empty until the storefront has search history). Rendering
+// the plain `text` field as React nodes gets escaping for free.
+function HighlightedSuggestion({ text, query }: { text: string; query: string }) {
+  const at = query ? text.toLowerCase().indexOf(query.toLowerCase()) : -1;
+  if (at === -1) return <>{text}</>;
+
+  return (
+    <>
+      {text.slice(0, at)}
+      <b>{text.slice(at, at + query.length)}</b>
+      {text.slice(at + query.length)}
+    </>
   );
 }
 

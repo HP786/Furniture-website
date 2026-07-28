@@ -19,9 +19,11 @@ export const PREDICTIVE_SEARCH_QUERY = gql(`
       types: [QUERY, PRODUCT, COLLECTION]
       unavailableProducts: LAST
     ) {
+      # styledText is deliberately not requested: it embeds the shopper's own
+      # query inside Shopify-generated markup, and the UI bolds the match itself
+      # rather than rendering that HTML.
       queries {
         text
-        styledText
       }
       collections {
         id
@@ -67,10 +69,7 @@ export async function loadPredictiveSearch(term: string): Promise<PredictiveSear
   if (!result) return EMPTY_PREDICTIVE_RESULTS;
 
   return {
-    queries: result.queries.map((suggestion) => ({
-      text: suggestion.text,
-      styledText: suggestion.styledText,
-    })),
+    queries: result.queries.map((suggestion) => ({ text: suggestion.text })),
     collections: result.collections.map((collection) => ({
       id: collection.id,
       handle: collection.handle,

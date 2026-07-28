@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { CollectionCard } from "../components/CollectionCard";
 import { loadCollectionsPage } from "../lib/collections";
+import { toJsonLd } from "../lib/json-ld";
 import { toURLSearchParams, type NextSearchParams } from "../lib/url";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +41,7 @@ export default async function CollectionsPage({ searchParams }: CollectionsPageP
     <main className="flex-1" id="main-content" tabIndex={-1}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(data.origin)) }}
+        dangerouslySetInnerHTML={{ __html: toJsonLd(breadcrumbJsonLd(data.origin)) }}
       />
       <div className="max-w-page px-margin mx-auto w-full py-8 md:py-12">
         <nav aria-label="Breadcrumb" className="mb-6">

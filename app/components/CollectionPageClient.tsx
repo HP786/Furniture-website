@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { CollectionPageData } from "../lib/collection";
 import { shopifyImageUrl, srcSetFor } from "../lib/image";
+import { toJsonLd } from "../lib/json-ld";
 import { CollectionViewedTracker } from "./AnalyticsTrackers";
 import {
   ActiveFilterChips,
@@ -52,7 +53,7 @@ function CollectionHeader({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(collection, origin)) }}
+        dangerouslySetInnerHTML={{ __html: toJsonLd(breadcrumbJsonLd(collection, origin)) }}
       />
       <nav aria-label="Breadcrumb" className="mb-6">
         <ol className="text-on-surface-secondary flex items-center gap-1.5 text-sm">

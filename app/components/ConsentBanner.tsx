@@ -36,10 +36,13 @@ export function ConsentBanner({ forceShow }: { forceShow: boolean }) {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  // Every non-essential category starts off. Pre-ticking analytics/preferences
+  // meant a visitor who opened "Manage preferences" and pressed Save recorded
+  // consent they never actively gave, which is not valid consent under GDPR.
   const [choice, setChoice] = useState<ConsentChoice>({
-    analytics: true,
+    analytics: false,
     marketing: false,
-    preferences: true,
+    preferences: false,
     sale_of_data: false,
   });
 

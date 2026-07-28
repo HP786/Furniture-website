@@ -2,7 +2,7 @@
 // `server-only`) and the client autocomplete UI, so the client never pulls in
 // the Storefront client module.
 
-export type PredictiveSearchSuggestion = { text: string; styledText: string };
+export type PredictiveSearchSuggestion = { text: string };
 
 export type PredictiveSearchProduct = {
   id: string;

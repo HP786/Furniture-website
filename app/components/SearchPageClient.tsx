@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
+import { toJsonLd } from "../lib/json-ld";
 import type { SearchPageData } from "../lib/search";
 import { SearchViewedTracker } from "./AnalyticsTrackers";
 import {
@@ -52,7 +53,7 @@ function SearchHeader({ searchTerm, origin }: { searchTerm: string; origin: stri
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(origin)) }}
+        dangerouslySetInnerHTML={{ __html: toJsonLd(breadcrumbJsonLd(origin)) }}
       />
       <nav aria-label="Breadcrumb" className="mb-6">
         <ol className="text-on-surface-secondary flex items-center gap-1.5 text-sm">
