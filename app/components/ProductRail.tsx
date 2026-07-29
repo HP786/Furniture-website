@@ -26,15 +26,37 @@ export function ProductRail({
   const railRef = useRef<HTMLDivElement>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
-  const pausedRef = useRef(false);
+
+  // Timestamp of the last user-driven scroll. The drift stays out of the way
+  // for HANDOFF_MS afterwards, which is what lets a swipe (and its momentum)
+  // run to completion instead of being overwritten frame by frame.
+  const userScrollAt = useRef(0);
+  // Hover holds the drift indefinitely, rather than only for the handoff
+  // window — a pointer resting on the rail should keep it still.
+  const hovering = useRef(false);
+  // The offset the drift last wrote. Any scroll landing somewhere else came
+  // from the user — that comparison is what distinguishes the two, since a
+  // touch drag and a programmatic write fire the same scroll event.
+  const driftAt = useRef<number | null>(null);
+
+  const HANDOFF_MS = 2500;
+
+  const markUserScroll = useCallback(() => {
+    userScrollAt.current = performance.now();
+  }, []);
 
   const syncEdges = useCallback(() => {
     const rail = railRef.current;
     if (!rail) return;
+
+    if (driftAt.current === null || Math.abs(rail.scrollLeft - driftAt.current) > 2) {
+      markUserScroll();
+    }
+
     const max = rail.scrollWidth - rail.clientWidth;
     setAtStart(rail.scrollLeft <= 1);
     setAtEnd(rail.scrollLeft >= max - 1);
-  }, []);
+  }, [markUserScroll]);
 
   useEffect(() => {
     if (!autoScroll) return;
@@ -51,8 +73,13 @@ export function ProductRail({
       const delta = Math.min(64, now - last);
       last = now;
       const max = rail.scrollWidth - rail.clientWidth;
+      const handsOff = hovering.current || now - userScrollAt.current < HANDOFF_MS;
 
-      if (!pausedRef.current && max > 8) {
+      if (handsOff || max <= 8) {
+        // Stay where the user left it, and resume drifting from there.
+        position = rail.scrollLeft;
+        driftAt.current = null;
+      } else {
         position += direction * delta * 0.045;
         if (position >= max) {
           position = max;
@@ -61,10 +88,9 @@ export function ProductRail({
           position = 0;
           direction = 1;
         }
-        rail.scrollLeft = Math.round(position);
-      } else {
-        // Resync so a manual scroll doesn't get yanked back on resume.
-        position = rail.scrollLeft;
+        const next = Math.round(position);
+        driftAt.current = next;
+        rail.scrollLeft = next;
       }
 
       frame = requestAnimationFrame(step);
@@ -74,16 +100,10 @@ export function ProductRail({
     return () => cancelAnimationFrame(frame);
   }, [autoScroll]);
 
-  const pause = () => {
-    pausedRef.current = true;
-  };
-  const resume = () => {
-    pausedRef.current = false;
-  };
-
   const nudge = (direction: 1 | -1) => () => {
     const rail = railRef.current;
     if (!rail) return;
+    markUserScroll();
     // Scroll by just under a viewport so a partial card stays visible as an
     // affordance that there is more to the right.
     rail.scrollBy({ left: direction * Math.round(rail.clientWidth * 0.9), behavior: "smooth" });
@@ -135,13 +155,26 @@ export function ProductRail({
       <div
         ref={railRef}
         onScroll={syncEdges}
-        onPointerEnter={pause}
-        onPointerLeave={resume}
-        onPointerDown={pause}
-        onFocusCapture={pause}
-        onBlurCapture={resume}
-        onTouchStart={pause}
-        className="scrollbar-none px-margin overflow-x-auto overflow-y-hidden"
+        // Any of these means the user has taken over; the drift backs off for
+        // HANDOFF_MS and keeps deferring while they stay engaged.
+        onPointerDown={markUserScroll}
+        onPointerMove={(event) => {
+          if (event.buttons > 0 || event.pointerType === "touch") markUserScroll();
+        }}
+        onTouchStart={markUserScroll}
+        onTouchMove={markUserScroll}
+        onWheel={markUserScroll}
+        onFocusCapture={markUserScroll}
+        onMouseEnter={() => {
+          hovering.current = true;
+        }}
+        onMouseLeave={() => {
+          hovering.current = false;
+          markUserScroll();
+        }}
+        // touch-action pan-x tells the browser this is a horizontal scroller,
+        // so it can hand the gesture straight to the compositor.
+        className="scrollbar-none px-margin touch-pan-x overflow-x-auto overflow-y-hidden overscroll-x-contain"
         // A scrollable region needs to be focusable to be keyboard-operable.
         tabIndex={0}
         role="group"
