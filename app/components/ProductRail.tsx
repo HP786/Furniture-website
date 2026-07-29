@@ -45,6 +45,10 @@ export function ProductRail({
     userScrollAt.current = performance.now();
   }, []);
 
+  const pause = useCallback(() => {
+    markUserScroll();
+  }, [markUserScroll]);
+
   const syncEdges = useCallback(() => {
     const rail = railRef.current;
     if (!rail) return;
