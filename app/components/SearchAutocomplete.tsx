@@ -41,10 +41,16 @@ export function SearchAutocomplete({
   defaultValue = "",
   id = "search-q",
   autoFocus = false,
+  placeholder = "Search products",
+  // "bar" is the header's inline pill: no visible label, taller field. "page"
+  // is the /search layout with its stacked label.
+  variant = "page",
 }: {
   defaultValue?: string;
   id?: string;
   autoFocus?: boolean;
+  placeholder?: string;
+  variant?: "page" | "bar";
 }) {
   const router = useRouter();
   const panelId = useId();
@@ -132,8 +138,15 @@ export function SearchAutocomplete({
 
   return (
     <div ref={containerRef} className="relative">
-      <form action="/search" method="get" role="search" className="space-y-2">
-        <label htmlFor={id} className="type-body-sm text-on-surface block font-medium">
+      <form action="/search" method="get" role="search" className={variant === "bar" ? "" : "space-y-2"}>
+        <label
+          htmlFor={id}
+          className={
+            variant === "bar"
+              ? "sr-only"
+              : "type-body-sm text-on-surface block font-medium"
+          }
+        >
           Search
         </label>
         <div className="relative">
@@ -156,8 +169,8 @@ export function SearchAutocomplete({
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={onKeyDown}
-            className="ps-10 pe-12"
-            placeholder="Search products"
+            className={variant === "bar" ? "h-13 rounded-[7px] ps-11 pe-12 text-[15px]" : "ps-10 pe-12"}
+            placeholder={placeholder}
             autoComplete="off"
             autoFocus={autoFocus}
             role="combobox"

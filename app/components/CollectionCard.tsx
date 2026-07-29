@@ -65,7 +65,8 @@ function productCountText(collection: CollectionCardData) {
   }
 
   const count = collection.productCountProbe.nodes.length;
-  return `${count} ${count === 1 ? "product" : "products"}`;
+  if (count === 0) return "Coming soon";
+  return `${count} ${count === 1 ? "piece" : "pieces"}`;
 }
 
 export function CollectionCard({
@@ -83,37 +84,35 @@ export function CollectionCard({
       className="card group rounded-card relative overflow-hidden"
       data-testid="collection-card"
     >
-      <div className="bg-surface-secondary relative block aspect-square overflow-hidden">
+      <div className="tile-ground relative block aspect-[4/3] overflow-hidden">
         {image ? (
-          <div className="h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.04]">
+          <div className="washed h-full w-full motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out motion-safe:group-hover:scale-105">
             <img
-              src={shopifyImageUrl(image.url, { width: 600, height: 600, crop: "center" })}
-              srcSet={srcSetFor(image.url, { width: 600, height: 600, crop: "center" })}
-              sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
+              src={shopifyImageUrl(image.url, { width: 800, height: 600, crop: "center" })}
+              srcSet={srcSetFor(image.url, { width: 800, height: 600, crop: "center" })}
+              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
               alt={image.altText ?? collection.title}
               className="h-full w-full object-cover"
               loading={priority ? "eager" : "lazy"}
               fetchPriority={priority ? "high" : "auto"}
-              width={600}
+              width={800}
               height={600}
             />
           </div>
-        ) : (
-          <div className="bg-surface-secondary h-full w-full" aria-hidden="true" />
-        )}
+        ) : null}
       </div>
-      <div className="overlay-dark pointer-events-none absolute inset-0" />
-      <div className="text-interactive-text absolute inset-x-0 bottom-0 z-10 p-4 text-left">
-        <h3 className="type-body-lg font-medium">
+      <div className="scrim-tile pointer-events-none absolute inset-0" />
+      <div className="absolute inset-x-0 bottom-0 z-10 p-6 text-left text-white">
+        <h3 className="type-heading-lg font-heading">
           <Link
             href={href}
-            className="card-link text-interactive-text"
-            aria-label={`View ${collection.title} collection`}
+            className="card-link text-white"
+            aria-label={`Shop ${collection.title}`}
           >
             {collection.title}
           </Link>
         </h3>
-        <p className="type-body-sm mt-0.5 opacity-80">{productCountText(collection)}</p>
+        <p className="mt-1 text-[12.5px] text-white/85">{productCountText(collection)}</p>
       </div>
     </article>
   );

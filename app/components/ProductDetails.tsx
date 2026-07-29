@@ -9,6 +9,8 @@ import { useMemo, useState } from "react";
 import { openCartDrawer } from "../lib/cart-drawer";
 import { shopifyImageUrl, srcSetFor } from "../lib/image";
 import { formatPercentOff, formatPrice } from "../lib/money";
+import { subtitleFromTags, swatchFromTags } from "../lib/swatches";
+import { useColourways } from "./FamilyProvider";
 import type { PRODUCT_QUERY } from "../products/[handle]/page";
 import { ProductViewedTracker } from "./AnalyticsTrackers";
 import { ProductCard } from "./ProductCard";
@@ -65,14 +67,18 @@ function ProductGallery({
   }, [product, selectedVariant]);
 
   if (images.length === 0) {
-    return <div data-testid="product-gallery" className="bg-surface-secondary aspect-square" />;
+    return (
+      <div data-testid="product-gallery" className="bg-surface-secondary aspect-[4/5] rounded-lg" />
+    );
   }
 
   return (
-    <div data-testid="product-gallery">
+    <div data-testid="product-gallery" className="flex flex-col gap-3.5">
+      {/* On mobile the stage is a snap scroller; from md it becomes a single
+          stage with the thumbnail strip below, as in the design. */}
       <div
         data-product-gallery-track
-        className="scrollbar-none flex snap-x snap-mandatory overflow-x-auto md:grid md:grid-cols-2 md:overflow-visible"
+        className="scrollbar-none bg-surface-secondary flex snap-x snap-mandatory overflow-x-auto rounded-lg md:block md:overflow-visible"
         tabIndex={0}
         aria-label={`${product.title} gallery images`}
       >
@@ -81,52 +87,46 @@ function ProductGallery({
             key={image.url}
             role="group"
             aria-roledescription="slide"
-            className="w-full shrink-0 snap-center contain-paint md:w-auto"
+            className={`w-full shrink-0 snap-center contain-paint ${index === 0 ? "md:block" : "md:hidden"}`}
           >
-            <div className="bg-surface-secondary aspect-square overflow-hidden">
+            <div className="aspect-[4/5] overflow-hidden rounded-lg">
               <img
-                src={shopifyImageUrl(image.url, {
-                  width: 1200,
-                  height: 1200,
-                  crop: "center",
-                })}
-                srcSet={srcSetFor(image.url, {
-                  width: 1200,
-                  height: 1200,
-                  crop: "center",
-                })}
-                sizes="(min-width: 768px) 33vw, 100vw"
+                src={shopifyImageUrl(image.url, { width: 1000, height: 1250, crop: "center" })}
+                srcSet={srcSetFor(image.url, { width: 1000, height: 1250, crop: "center" })}
+                sizes="(min-width: 768px) 55vw, 100vw"
                 alt={image.altText ?? product.title}
                 className="h-full w-full object-cover"
                 loading={index === 0 ? "eager" : "lazy"}
                 fetchPriority={index === 0 ? "high" : "auto"}
-                width={1200}
-                height={1200}
+                width={1000}
+                height={1250}
                 data-testid={index === 0 ? "product-gallery-image" : undefined}
               />
             </div>
           </div>
         ))}
       </div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex items-center justify-center gap-3 md:hidden">
-        <div
-          data-slideshow-dots
-          role="group"
-          aria-label="Slideshow pagination"
-          className="flex items-center justify-center gap-2"
-        >
-          {images.map((image, index) => (
-            <span
-              key={image.url}
-              className={
-                index === 0
-                  ? "bg-on-surface size-2 rounded-full"
-                  : "bg-on-surface/30 size-2 rounded-full"
-              }
-            />
+
+      {images.length > 1 ? (
+        <ul role="list" className="hidden grid-cols-4 gap-3.5 md:grid">
+          {images.slice(0, 4).map((image, index) => (
+            <li key={`thumb-${image.url}`}>
+              <div
+                className={`bg-surface-secondary aspect-square overflow-hidden rounded border-2 ${index === 0 ? "border-interactive" : "border-transparent"}`}
+              >
+                <img
+                  src={shopifyImageUrl(image.url, { width: 300, height: 300, crop: "center" })}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  width={300}
+                  height={300}
+                />
+              </div>
+            </li>
           ))}
-        </div>
-      </div>
+        </ul>
+      ) : null}
     </div>
   );
 }
@@ -200,14 +200,34 @@ function InventoryHint({ selectedVariant }: { selectedVariant: VariantData | nul
   return null;
 }
 
+/**
+ * A single-variant product reports a "Title" option whose only value is
+ * "Default Title" — Shopify plumbing, not a choice. Rendering it would put a
+ * dead pill on the page, so it is filtered out.
+ */
+function isPlaceholderOption(option: { name: string; values: Array<{ name: string }> }) {
+  return (
+    option.name === "Title" &&
+    option.values.length === 1 &&
+    option.values[0]?.name === "Default Title"
+  );
+}
+
 function VariantSelector({ product }: { product: ProductData }) {
   const { options, register } = useProductForm();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const visibleOptions = options.filter((option) => !isPlaceholderOption(option));
+
+  if (visibleOptions.length === 0) {
+    // The form still needs the pathname for its return-to redirect even when
+    // there is nothing to choose.
+    return <input type="hidden" name="returnTo" value={pathname} readOnly />;
+  }
 
   return (
     <div className="swatch-buttons space-y-4">
-      {options.map((option) => {
+      {visibleOptions.map((option) => {
         const current = selectedOptionValue(option);
         const productOption = product.options.find((item) => item.name === option.name);
         const isColor = /colou?r/i.test(option.name);
@@ -388,44 +408,169 @@ function AddToCartForm({ product }: { product: ProductData }) {
   );
 }
 
-function ProductInfo({ product }: { product: ProductData }) {
-  const { selectedVariant } = useProductForm();
+/** "The detail" is the product's own copy; the other two are store policy. */
+function ProductAccordions({ product }: { product: ProductData }) {
+  const tags = product.tags ?? [];
+  const swatch = swatchFromTags(tags);
+  const material = subtitleFromTags(tags);
+
+  const panels = [
+    {
+      id: "details",
+      title: "The detail",
+      body: product.descriptionHtml,
+      html: true,
+    },
+    {
+      id: "materials",
+      title: "Materials & finish",
+      body: [
+        material ? `${material} over a kiln-dried hardwood frame.` : null,
+        swatch ? `Shown in ${swatch.name}.` : null,
+        "Vacuum weekly on a low setting; blot spills, never rub.",
+      ]
+        .filter(Boolean)
+        .join(" "),
+      html: false,
+    },
+    {
+      id: "delivery",
+      title: "Delivery & returns",
+      body: "Dispatched within three business days. Complimentary white-glove delivery on orders over $1,500 — we carry it in, place it and take the packaging away. Thirty days to change your mind.",
+      html: false,
+    },
+  ];
 
   return (
-    <div className="flex flex-col gap-6 md:sticky md:top-8 md:self-start">
+    <div className="border-border flex flex-col border-t">
+      <h2 className="sr-only">Product details</h2>
+      {panels.map((panel, index) => (
+        <details
+          key={panel.id}
+          className="group border-border border-b"
+          name="product-details"
+          open={index === 0}
+        >
+          <summary className="marker-hidden text-on-surface flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-[14.5px]">
+            {panel.title}
+            <span
+              className="shrink-0 group-open:rotate-180 motion-safe:transition-transform motion-safe:duration-300"
+              aria-hidden="true"
+            >
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </span>
+          </summary>
+          {panel.html ? (
+            <div
+              className="richtext text-sand-700 max-w-[520px] pb-5 text-[14px] leading-[1.65]"
+              dangerouslySetInnerHTML={{ __html: panel.body }}
+            />
+          ) : (
+            <p className="text-sand-700 max-w-[520px] pb-5 text-[14px] leading-[1.65]">
+              {panel.body}
+            </p>
+          )}
+        </details>
+      ))}
+    </div>
+  );
+}
+
+function ProductInfo({ product }: { product: ProductData }) {
+  const { selectedVariant } = useProductForm();
+  const tags = product.tags ?? [];
+  const swatch = swatchFromTags(tags);
+  const subtitle = subtitleFromTags(tags);
+  const colourways = useColourways(product.title);
+
+  return (
+    <div className="flex flex-col gap-0 md:sticky md:top-38 md:self-start">
       <ProductViewedTracker product={product} selectedVariant={selectedVariant} />
-      <div className="pt-4 md:pt-8">
-        <p className="type-body-sm text-on-surface-secondary mb-4 tracking-wide uppercase">
-          {product.vendor}
-        </p>
-        <h1 className="type-display text-on-surface">{product.title}</h1>
-        <PriceBlock product={product} selectedVariant={selectedVariant} />
+      <div className="pt-4 md:pt-0">
+        <p className="type-overline text-walnut-700 mb-3">The Quiet Rooms</p>
+        <h1 className="font-heading text-[32px] leading-[1.06] font-light tracking-[-0.025em] text-pretty md:text-[46px]">
+          {product.title}
+        </h1>
+        {subtitle ? <p className="text-sand-600 mt-2.5 text-[15px]">{subtitle}</p> : null}
+        <div className="font-heading mt-4 text-[26px] md:text-[30px]">
+          <PriceBlock product={product} selectedVariant={selectedVariant} />
+        </div>
+        <p className="text-sand-600 mt-1.5 text-[13px]">or four instalments — no interest</p>
         <InventoryHint selectedVariant={selectedVariant} />
       </div>
       <span className="sr-only" aria-live="polite" id="inventory-status" />
-      {product.description ? (
-        <div className="type-body-sm text-on-surface-secondary leading-relaxed">
-          {product.description}
+
+      {/* Colourways. Each finish is its own product in this catalogue, so the
+          swatches are links between sibling products rather than variant
+          buttons — same behaviour as the design, no catalogue restructuring. */}
+      {colourways.length > 1 ? (
+        <div className="mt-7">
+          <div className="mb-3 flex items-baseline justify-between">
+            <span className="type-overline text-sand-700">Fabric</span>
+            <span className="text-sand-600 text-[13.5px]">{swatch?.name ?? ""}</span>
+          </div>
+          <ul role="list" className="flex flex-wrap gap-3">
+            {colourways.map((colourway) => {
+              const isCurrent = colourway.handle === product.handle;
+              return (
+                <li key={colourway.handle}>
+                  <Link
+                    href={`/products/${colourway.handle}`}
+                    aria-current={isCurrent ? "page" : undefined}
+                    aria-label={colourway.title}
+                    title={colourway.colorName ?? colourway.title}
+                    className="border-border focus-visible:outline-accent block size-11 rounded-full border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-transform"
+                    style={{
+                      background: colourway.hex ?? "var(--color-surface-secondary)",
+                      boxShadow: isCurrent
+                        ? "0 0 0 3px var(--color-surface), 0 0 0 4.5px var(--color-interactive)"
+                        : undefined,
+                      transform: isCurrent ? "scale(1.06)" : undefined,
+                    }}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : swatch ? (
+        <div className="mt-7">
+          <div className="mb-3 flex items-baseline justify-between">
+            <span className="type-overline text-sand-700">Fabric</span>
+            <span className="text-sand-600 text-[13.5px]">{swatch.name}</span>
+          </div>
+          <span
+            className="border-border ring-interactive inline-block size-11 rounded-full border ring-2 ring-offset-2 ring-offset-[color:var(--color-surface)]"
+            style={{ background: swatch.hex }}
+            title={swatch.name}
+          />
         </div>
       ) : null}
-      <VariantSelector product={product} />
+
+      <div className="mt-6">
+        <VariantSelector product={product} />
+      </div>
       <AddToCartForm product={product} />
-      <h2 className="sr-only">Product details</h2>
-      <details className="group border-border border-t border-b" name="product-details" open>
-        <summary className="marker-hidden text-on-surface hover:text-on-surface-secondary flex cursor-pointer items-center justify-between px-1 py-4 text-sm font-medium">
-          <span className="text-sm font-medium">Description</span>
-          <span
-            className="ms-4 size-4 shrink-0 group-open:rotate-180 motion-safe:transition-transform motion-safe:duration-200"
-            aria-hidden="true"
-          >
-            <img src="/icons/icon-chevron-down.svg" alt="" className="size-4" />
-          </span>
-        </summary>
-        <div
-          className="richtext text-on-surface-secondary px-1 pb-4 text-sm"
-          dangerouslySetInnerHTML={{ __html: product.descriptionHtml }}
-        />
-      </details>
+
+      <a
+        href="#swatch-heading"
+        className="button-secondary rounded-button focus-visible:outline-accent mt-4 mb-7 inline-flex w-full items-center justify-center py-4 text-[14px] no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        Order free fabric samples
+      </a>
+
+      <ProductAccordions product={product} />
     </div>
   );
 }
@@ -458,8 +603,33 @@ export function ProductDetails({
       }}
     >
       <main className="flex-1" id="main-content" tabIndex={-1}>
-        <section className="max-w-page px-margin mx-auto w-full pb-4">
-          <div className="product-grid mb-16 grid grid-cols-1 gap-6 md:gap-12">
+        <nav aria-label="Breadcrumb" className="max-w-page px-margin mx-auto w-full pt-5.5">
+          <ol className="text-sand-600 flex flex-wrap items-center gap-2 text-[12.5px]">
+            <li>
+              <Link href="/" className="hover:text-on-surface motion-safe:transition-colors">
+                Home
+              </Link>
+            </li>
+            <li aria-hidden="true">/</li>
+            <li>
+              <Link
+                href="/collections/shop-all"
+                className="hover:text-on-surface motion-safe:transition-colors"
+              >
+                Shop
+              </Link>
+            </li>
+            <li aria-hidden="true">/</li>
+            <li>
+              <span aria-current="page" className="text-on-surface">
+                {product.title}
+              </span>
+            </li>
+          </ol>
+        </nav>
+
+        <section className="max-w-page px-margin mx-auto w-full pt-6 pb-4">
+          <div className="mb-16 grid grid-cols-1 gap-8 md:grid-cols-[1.15fr_1fr] md:items-start md:gap-14">
             <div className="relative">
               <ProductDetailsGallery product={product} />
             </div>
@@ -468,7 +638,7 @@ export function ProductDetails({
         </section>
         {/* "Pair it with" is Search & Discovery's COMPLEMENTARY intent — it only
             renders once complementary products are configured for this product. */}
-        <RecommendationShelf title="Pair it with" products={complementary} />
+        <RecommendationShelf title="Complete the room" products={complementary} />
         <RecommendationShelf title="You may also like" products={related} />
       </main>
     </ProductProvider>
@@ -486,13 +656,17 @@ function RecommendationShelf({
 
   return (
     <section className="py-4">
-      <div className="border-border border-t pt-12">
-        <h2 className="type-heading-xl max-w-page px-margin mx-auto mb-8">{title}</h2>
+      <div className="pt-12">
+        <h2 className="type-display max-w-page px-margin mx-auto mb-7">{title}</h2>
         <div className="max-w-page px-margin mx-auto contain-paint">
-          <ul role="list" className="grid grid-cols-1 gap-x-1 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
+          <ul role="list" className="grid grid-cols-2 gap-x-5.5 gap-y-8 lg:grid-cols-4">
             {products.map((product, index) => (
               <li key={product.id}>
-                <ProductCard product={product} priority={index === 0} />
+                <ProductCard
+                  product={product}
+                  priority={index === 0}
+                  sizes="(min-width: 1024px) 23vw, 50vw"
+                />
               </li>
             ))}
           </ul>

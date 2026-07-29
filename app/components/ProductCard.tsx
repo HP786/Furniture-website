@@ -1,14 +1,20 @@
+"use client";
+
 import { gql, type StorefrontApi } from "@shopify/hydrogen";
 import Link from "next/link";
+import { useState } from "react";
 
 import { shopifyImageUrl, srcSetFor } from "../lib/image";
 import { formatPrice } from "../lib/money";
+import { subtitleFromTags, swatchFromTags } from "../lib/swatches";
+import { useColourways } from "./FamilyProvider";
 
 export const PRODUCT_CARD_FRAGMENT = gql(`
   fragment ProductCard on Product {
     id
     handle
     title
+    tags
     availableForSale
     featuredImage {
       url
@@ -67,73 +73,137 @@ function moneyGreater(a: { amount: string } | null | undefined, b: { amount: str
 export function ProductCard({
   product,
   priority = false,
+  sizes = "(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw",
 }: {
   product: ProductCardData;
   priority?: boolean;
+  sizes?: string;
 }) {
-  const image = product.featuredImage ?? product.images.nodes[0] ?? null;
-  const hoverImage = product.images.nodes.find((node) => node.url !== image?.url) ?? null;
+  const colourways = useColourways(product.title);
+  // Hovering a swatch previews that colourway in place; the swatch itself is a
+  // link, so clicking still lands on that colourway's own product page.
+  const [preview, setPreview] = useState<string | null>(null);
+
+  const ownImage = product.featuredImage ?? product.images.nodes[0] ?? null;
+  const image = preview ? { url: preview, altText: null } : ownImage;
+  const hoverImage = preview
+    ? null
+    : (product.images.nodes.find((node) => node.url !== ownImage?.url) ?? null);
+
   const price = product.priceRange.minVariantPrice;
   const compareAtPrice = product.compareAtPriceRange.minVariantPrice;
   const onSale = moneyGreater(compareAtPrice, price);
   const soldOut = !product.availableForSale;
+  const tags = product.tags ?? [];
+  const swatch = swatchFromTags(tags);
+  const subtitle = subtitleFromTags(tags);
 
   return (
     <article
-      className="group card relative flex flex-col gap-2"
+      className="group card relative flex h-full flex-col gap-3"
       aria-label={product.title}
       data-testid="product-card"
     >
-      <div className="rounded-card bg-surface-secondary relative block aspect-square overflow-hidden">
+      <div className="rounded-lg bg-surface-secondary relative block aspect-[4/5] overflow-hidden">
         {image ? (
-          <div className="h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.04]">
+          <div className="h-full w-full motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out motion-safe:group-hover:scale-105">
             <img
-              src={shopifyImageUrl(image.url, { width: 600, height: 600, crop: "center" })}
-              srcSet={srcSetFor(image.url, { width: 600, height: 600, crop: "center" })}
-              sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 50vw"
+              src={shopifyImageUrl(image.url, { width: 620, height: 775, crop: "center" })}
+              srcSet={srcSetFor(image.url, { width: 620, height: 775, crop: "center" })}
+              sizes={sizes}
               alt={image.altText ?? product.title}
               className="h-full w-full object-cover"
               loading={priority ? "eager" : "lazy"}
               fetchPriority={priority ? "high" : "auto"}
-              width={600}
-              height={600}
+              width={620}
+              height={775}
             />
           </div>
         ) : null}
+
         {hoverImage ? (
-          <div className="pointer-events-none absolute inset-0 opacity-0 motion-safe:transition-opacity motion-safe:duration-300 motion-safe:group-hover:opacity-100">
+          <div className="pointer-events-none absolute inset-0 opacity-0 motion-safe:transition-opacity motion-safe:duration-500 motion-safe:group-hover:opacity-100">
             <img
-              src={shopifyImageUrl(hoverImage.url, { width: 600, height: 600, crop: "center" })}
-              srcSet={srcSetFor(hoverImage.url, { width: 600, height: 600, crop: "center" })}
-              sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 50vw"
-              alt={hoverImage.altText ?? `${product.title} alternate`}
+              src={shopifyImageUrl(hoverImage.url, { width: 620, height: 775, crop: "center" })}
+              srcSet={srcSetFor(hoverImage.url, { width: 620, height: 775, crop: "center" })}
+              sizes={sizes}
+              alt=""
               className="h-full w-full object-cover"
               loading="lazy"
-              width={600}
-              height={600}
+              width={620}
+              height={775}
             />
           </div>
         ) : null}
+
         {soldOut ? (
-          <span className="badge-soldout absolute start-2 top-2 inline-flex items-center rounded-full font-medium">
+          <span className="badge-soldout absolute start-3.5 top-3.5 inline-flex items-center rounded-[7px] text-[10.5px] tracking-[0.12em] uppercase">
             Sold out
           </span>
         ) : onSale ? (
-          <span className="badge-sale absolute start-2 top-2 inline-flex items-center rounded-full font-medium">
+          <span className="text-walnut-800 absolute start-3.5 top-3.5 inline-flex items-center rounded-[7px] bg-[color:rgb(253_251_248/0.9)] px-3 py-1.5 text-[10.5px] tracking-[0.12em] uppercase">
             Sale
           </span>
         ) : null}
+
+        {/* Quick view. The card itself is a link overlay (.card-link), so this
+            sits above it and points at the same product — a keyboard user
+            reaches the product once, through the title. */}
+        <div className="pointer-events-none absolute inset-x-3.5 bottom-3.5 z-10 hidden opacity-0 motion-safe:translate-y-3.5 motion-safe:transition-[opacity,transform] motion-safe:duration-500 motion-safe:group-hover:translate-y-0 group-hover:opacity-100 md:block">
+          <span className="button-primary pointer-events-none flex w-full items-center justify-center rounded-[7px] py-3.5 text-[12.5px] font-semibold tracking-[0.1em] uppercase">
+            View piece
+          </span>
+        </div>
       </div>
-      <div className="flex flex-col gap-0.5 text-left">
-        <h3 className="type-body-sm text-on-surface line-clamp-2 font-medium">
+
+      {colourways.length > 1 ? (
+        <ul role="list" className="relative z-10 flex h-[19px] items-center gap-2">
+          {colourways.map((colourway) => {
+            const isCurrent = colourway.handle === product.handle;
+            return (
+              <li key={colourway.handle}>
+                <Link
+                  href={`/products/${colourway.handle}`}
+                  onMouseEnter={() => setPreview(colourway.imageUrl)}
+                  onFocus={() => setPreview(colourway.imageUrl)}
+                  onMouseLeave={() => setPreview(null)}
+                  onBlur={() => setPreview(null)}
+                  aria-label={`${colourway.title}${isCurrent ? " (shown)" : ""}`}
+                  title={colourway.colorName ?? colourway.title}
+                  className="border-border focus-visible:outline-accent block size-[17px] rounded-full border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  style={{
+                    background: colourway.hex ?? "var(--color-surface-secondary)",
+                    boxShadow: isCurrent
+                      ? "0 0 0 2px var(--color-surface), 0 0 0 3.5px var(--color-interactive)"
+                      : undefined,
+                  }}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      ) : swatch ? (
+        <div className="flex h-[19px] items-center gap-2">
+          <span
+            className="border-border size-[17px] rounded-full border"
+            style={{ background: swatch.hex }}
+            title={swatch.name}
+          />
+          <span className="sr-only">Colour: {swatch.name}</span>
+        </div>
+      ) : null}
+
+      <div className="flex flex-col">
+        <h3 className="text-on-surface text-[15.5px] leading-[1.35] font-normal">
           <Link href={`/products/${product.handle}`} className="card-link text-on-surface">
             {product.title}
           </Link>
         </h3>
-        <div className="inline-flex flex-wrap items-baseline gap-2 text-sm">
+        {subtitle ? <p className="text-sand-600 mt-1 text-[13px]">{subtitle}</p> : null}
+        <div className="font-heading mt-2.5 inline-flex flex-wrap items-baseline gap-2 text-[19px]">
           {onSale ? (
             <>
-              <span className="text-sale font-medium">
+              <span className="text-sale">
                 <span className="sr-only">Sale price: </span>
                 {formatPrice(price)}
               </span>
@@ -143,7 +213,7 @@ export function ProductCard({
               </s>
             </>
           ) : (
-            <span className="text-on-surface font-medium">
+            <span className="text-on-surface">
               <span className="sr-only">Price: </span>
               {formatPrice(price)}
             </span>

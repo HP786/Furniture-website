@@ -1,61 +1,69 @@
-import { gql } from "@shopify/hydrogen";
 import type { Metadata } from "next";
+import { Figtree, Jost } from "next/font/google";
 import Script from "next/script";
 import type { ReactNode } from "react";
 
 import { AnalyticsDebugOverlay } from "./components/AnalyticsDebugOverlay";
 import { CartDrawer } from "./components/CartDrawer";
 import { ConsentBanner } from "./components/ConsentBanner";
+import { FamilyProvider } from "./components/FamilyProvider";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
+import { MobileTabBar } from "./components/MobileTabBar";
 import { Providers } from "./components/Providers";
 import { getShopAnalyticsData } from "./lib/analytics-shop";
 import { cartHandlers } from "./lib/cart-handlers";
+import { loadCollectionIndex } from "./lib/collection-index";
+import { loadFamilyIndex } from "./lib/family-index";
+import { BRAND_NAME, buildNavigation } from "./lib/navigation";
 import { analyticsConsent, getStoreDomain } from "./lib/shop";
 import { getStorefrontClient } from "./lib/storefront";
 
 import "./globals.css";
 
+// Jost carries the headings, Figtree the body. Both are exposed as CSS
+// variables so tokens.css can own the --font-heading / --font-body mapping
+// rather than components reaching for the font objects directly.
+const jost = Jost({
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500"],
+  variable: "--font-jost",
+  display: "swap",
+});
+
+const figtree = Figtree({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-figtree",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "CORE Storefront",
-  description: "A Storefront Kit example built with Next.js.",
+  title: `${BRAND_NAME} — Furniture made in small runs from solid timber and honest cloth`,
+  description: `${BRAND_NAME} makes sofas, armchairs, ottomans and solid oak tables in small runs. Bouclé, Otto fabric, leather and oak, with free fabric samples and white-glove delivery across Australia.`,
+  openGraph: {
+    type: "website",
+    siteName: BRAND_NAME,
+    title: `${BRAND_NAME} — Furniture made in small runs`,
+    description:
+      "Sofas, armchairs, ottomans and solid oak tables in bouclé, Otto fabric, leather and oak. Free fabric samples, white-glove delivery.",
+  },
 };
-
-const NAV_COLLECTIONS_QUERY = gql(`
-  query NavCollections {
-    collections(first: 5) {
-      nodes {
-        handle
-        title
-      }
-    }
-  }
-`);
-
-const FALLBACK_COLLECTIONS: { handle: string; title: string }[] = [];
-
-// Always surface a "Shop All" entry point (whole catalogue) at the start of the nav.
-const SHOP_ALL_NAV = { handle: "shop-all", title: "Shop All" };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const storefrontClient = await getStorefrontClient();
-  const [{ data: cartData }, navResult, analyticsShop] = await Promise.all([
+  const [{ data: cartData }, collectionIndex, familyIndex, analyticsShop] = await Promise.all([
     cartHandlers.get({ storefrontClient }),
-    storefrontClient.graphql(NAV_COLLECTIONS_QUERY),
+    loadCollectionIndex(),
+    loadFamilyIndex(),
     getShopAnalyticsData(),
   ]);
-  const loadedCollections = navResult.data?.collections.nodes.length
-    ? navResult.data.collections.nodes
-    : FALLBACK_COLLECTIONS;
-  // Prepend "Shop All" and drop it from the loaded set to avoid a duplicate nav entry.
-  const navCollections = [
-    SHOP_ALL_NAV,
-    ...loadedCollections.filter((collection) => collection.handle !== SHOP_ALL_NAV.handle),
-  ];
+
+  const navigation = buildNavigation(collectionIndex.byHandle);
   const analyticsDebug = process.env.PUBLIC_ANALYTICS_DEBUG === "1";
 
   return (
-    <html lang="en">
+    <html lang="en" className={`${jost.variable} ${figtree.variable}`}>
       <head>
         <Script
           type="module"
@@ -71,22 +79,24 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         >
           Skip to content
         </a>
-        <div
-          role="region"
-          aria-label="Announcement"
-          className="bg-on-surface px-margin py-2.5 text-center"
-        >
-          <p className="type-body-sm text-surface">Free shipping on orders over $50</p>
-        </div>
         <Providers
           cart={cartData.cart ?? undefined}
           analyticsShop={analyticsShop}
           analyticsConsent={analyticsConsent}
           enableTestTap={analyticsDebug}
         >
-          <Header collections={navCollections} accountUrl={`https://${getStoreDomain()}/account/login`} />
-          {children}
+          <FamilyProvider index={familyIndex}>
+            <Header
+              navigation={navigation}
+              accountUrl={`https://${getStoreDomain()}/account/login`}
+            />
+            {children}
+          </FamilyProvider>
           <Footer />
+          {/* Clears the fixed mobile tab bar so the footer's last row is never
+              trapped underneath it. */}
+          <div aria-hidden="true" className="h-20 md:hidden" />
+          <MobileTabBar />
           <CartDrawer />
           <ConsentBanner forceShow={process.env.MOCK_SHOP === "1"} />
           {analyticsDebug ? <AnalyticsDebugOverlay /> : null}

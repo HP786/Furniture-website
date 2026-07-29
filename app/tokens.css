@@ -8,12 +8,36 @@
 */
 
 @theme {
-  /* Surfaces */
-  --color-surface: #ffffff;
-  --color-surface-secondary: #e3e3e3;
-  --color-on-surface: #000000;
-  --color-on-surface-secondary: #6b7280;
-  --color-border: #e5e7eb;
+  /* Surfaces — Walnut: warm paper over ink-brown text. */
+  --color-surface: #fffbf5;
+  --color-surface-secondary: #f2ece2;
+  --color-on-surface: #201e1d;
+  --color-on-surface-secondary: #867a68;
+  --color-border: #e2d9cb;
+
+  /* ─── Tonal ramps ──────────────────────────────────────────────────────
+     Two ramps on one shared lightness scale. `walnut` is the brand brown that
+     --color-primary sits on; `sand` is the warm neutral behind body copy,
+     dividers and the dark footer/marquee surfaces. */
+  --color-walnut-100: #f6efe6;
+  --color-walnut-200: #e9dccb;
+  --color-walnut-300: #d6c1a4;
+  --color-walnut-400: #b99a76;
+  --color-walnut-500: #9a7752;
+  --color-walnut-600: #63472c;
+  --color-walnut-700: #63472c;
+  --color-walnut-800: #4a341f;
+  --color-walnut-900: #2f2015;
+
+  --color-sand-100: #fdfbf8;
+  --color-sand-200: #f2ece2;
+  --color-sand-300: #e2d9cb;
+  --color-sand-400: #c8bcaa;
+  --color-sand-500: #a89b88;
+  --color-sand-600: #867a68;
+  --color-sand-700: #655b4c;
+  --color-sand-800: #443c31;
+  --color-sand-900: #2b2620;
 
   /* ─── Brand: the single source of truth ────────────────────────────────
      Change THIS one value to recolor the entire storefront. Every interactive
@@ -21,9 +45,9 @@
      filter swatches and variant option pills — is DERIVED from it with modern
      CSS: color-mix() in perceptual oklab space for the hover/active state
      shades, and relative-color oklch() for the softer accent tint. Nothing
-     hard-codes the burgundy a second time, so the whole UI re-harmonizes from
-     this one knob. */
-  --color-primary: #5d0707;
+     hard-codes the walnut brown a second time, so the whole UI re-harmonizes
+     from this one knob. */
+  --color-primary: #7d5c3c;
 
   /* Interactive — derived from --color-primary.
      -hover and -active are the brand darkened one and two steps in oklab; this
@@ -31,7 +55,7 @@
   --color-interactive: var(--color-primary);
   --color-interactive-hover: color-mix(in oklab, var(--color-primary) 85%, black);
   --color-interactive-active: color-mix(in oklab, var(--color-primary) 72%, black);
-  --color-interactive-text: #ffffff;
+  --color-interactive-text: #fffbf5;
 
   /* Accent — a lighter, desaturated tint of the brand, used for focus rings
      and the accent badge. Relative-color oklch: lift lightness, cut chroma to
@@ -74,26 +98,26 @@
   /* Hover */
   --color-hover: rgb(0 0 0 / 0.03);
 
-  /* Radius */
-  --radius-sm: 0.25rem;
-  --radius: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-button: 0.5rem;
-  --radius-card: 0;
-  --radius-input: 0.5rem;
+  /* Radius — Walnut keeps corners nearly square; only pills/buttons soften. */
+  --radius-sm: 2px;
+  --radius: 5px;
+  --radius-lg: 3px;
+  --radius-button: 7px;
+  --radius-card: 3px;
+  --radius-input: 7px;
   --radius-badge: 9999px;
 
-  /* Typography: locked to system-ui for examples. */
-  --font-body: system-ui, -apple-system, sans-serif;
-  --font-heading: system-ui, -apple-system, sans-serif;
+  /* Typography — Jost headings, Figtree body; both injected by next/font. */
+  --font-body: var(--font-figtree), system-ui, -apple-system, sans-serif;
+  --font-heading: var(--font-jost), system-ui, -apple-system, sans-serif;
 
   /* Easing */
   --ease-ui: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
-  /* Layout spacing */
-  --spacing-page: 80rem;
-  --spacing-margin: 1rem;
+  /* Layout spacing — Walnut runs a wide 1440px measure with a 44px gutter. */
+  --spacing-page: 1440px;
+  --spacing-margin: 18px;
   --spacing-control-height: 2.125rem;
   --spacing-touch-target: 2.75rem;
   /* Visible facet indicator sizes. These are the painted box/chip; the 44px
@@ -130,29 +154,46 @@
 
 :root {
   --type-paragraph-lg-font: var(--font-body);
-  --type-paragraph-lg-size: 18px;
+  --type-paragraph-lg-size: 17px;
   --type-paragraph-font: var(--font-body);
-  --type-paragraph-size: 16px;
+  --type-paragraph-size: 15px;
   --type-paragraph-sm-font: var(--font-body);
-  --type-paragraph-sm-size: 14px;
+  --type-paragraph-sm-size: 13.5px;
   --type-heading-2xl-font: var(--font-heading);
-  --type-heading-2xl-size: 36px;
+  --type-heading-2xl-size: 32px;
   --type-heading-xl-font: var(--font-heading);
-  --type-heading-xl-size: 30px;
+  --type-heading-xl-size: 28px;
   --type-heading-lg-font: var(--font-heading);
   --type-heading-lg-size: 24px;
   --type-heading-md-font: var(--font-heading);
   --type-heading-md-size: 20px;
   --type-heading-sm-font: var(--font-heading);
-  --type-heading-sm-size: 18px;
+  --type-heading-sm-size: 17px;
   --type-subheading-font: var(--font-body);
-  --type-subheading-size: 12px;
-  --icon-stroke-width: 1.5;
+  --type-subheading-size: 11px;
+  /* 2.75 matches the 15–21px inline icons that dominate the chrome. */
+  --icon-stroke-width: 2.75;
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --type-heading-2xl-size: 44px;
+    --type-heading-xl-size: 32px;
+  }
 }
 
 @layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+    font-weight: 300;
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+  }
   h1 {
-    line-height: 1.2;
+    letter-spacing: -0.025em;
   }
 
   s-dialog,
@@ -234,7 +275,7 @@
 
   @media (min-width: 48rem) {
     :root {
-      --spacing-margin: 2.5rem;
+      --spacing-margin: 44px;
     }
   }
 }
@@ -556,31 +597,42 @@
     border: 1px solid transparent;
   }
 
+  /* Light weight + negative tracking is the headline voice, so it lives on the
+     type classes rather than being re-applied per section. */
   .type-display {
     font-size: var(--type-heading-2xl-size);
     font-family: var(--type-heading-2xl-font);
     font-weight: 300;
-    line-height: 1.25;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    text-wrap: pretty;
   }
   .type-heading-xl {
     font-size: var(--type-heading-xl-size);
     font-family: var(--type-heading-xl-font);
     font-weight: 300;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
   }
   .type-heading-lg {
     font-size: var(--type-heading-lg-size);
     font-family: var(--type-heading-lg-font);
     font-weight: 300;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
   }
   .type-heading-md {
     font-size: var(--type-heading-md-size);
     font-family: var(--type-heading-md-font);
-    font-weight: 400;
+    font-weight: 300;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
   }
   .type-heading-sm {
     font-size: var(--type-heading-sm-size);
     font-family: var(--type-heading-sm-font);
     font-weight: 400;
+    line-height: 1.2;
   }
   .type-body-lg {
     font-size: var(--type-paragraph-lg-size);
@@ -598,9 +650,9 @@
   .type-overline {
     font-size: var(--type-subheading-size);
     font-family: var(--type-subheading-font);
-    font-weight: 500;
+    font-weight: 400;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.22em;
   }
   .card {
     position: relative;

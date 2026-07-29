@@ -8,8 +8,8 @@
  * It does NOT own the open/close MOTION or the body scroll lock — those are
  * app-owned and live here.
  *
- * Do NOT add web fonts or @theme font overrides here: the core tokens lock the
- * example typography to system-ui.
+ * Fonts are declared in tokens.css as var(--font-jost) / var(--font-figtree)
+ * and supplied by next/font in layout.tsx — do not re-@import them here.
  */
 
 :root {
@@ -18,6 +18,184 @@
 
 html {
   scroll-padding-top: var(--chrome-top);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Section chrome ─────────────────────────────────────────────────────
+ * Composite treatments shared across the marketing sections. Tokens are in
+ * tokens.css; these are the repeated combinations.
+ */
+
+/* Grades photography down so the warm paper stays the brightest thing here. */
+.washed {
+  filter: saturate(0.6) contrast(0.85) brightness(1.1) opacity(0.94);
+}
+
+/* Scrims over hero/band/tile imagery, separated by weight. */
+/* Hero and band scrims — sized so white headline copy clears AA at the left edge. */
+.scrim-hero {
+  background:
+    linear-gradient(120deg, rgb(74 52 31 / 0.2), rgb(169 113 63 / 0.12)),
+    linear-gradient(
+      90deg,
+      rgb(43 38 32 / 0.82) 0%,
+      rgb(43 38 32 / 0.5) 46%,
+      rgb(43 38 32 / 0.1) 80%
+    );
+}
+.scrim-band {
+  background: linear-gradient(
+    90deg,
+    rgb(43 38 32 / 0.74) 0%,
+    rgb(43 38 32 / 0.34) 52%,
+    rgb(43 38 32 / 0.05) 82%
+  );
+}
+/* Tile scrim — the white tile label must clear AA at the foot of the image. */
+.scrim-tile {
+  background: linear-gradient(180deg, rgb(43 38 32 / 0) 30%, rgb(43 38 32 / 0.88) 100%);
+}
+.scrim-tile-soft {
+  background: linear-gradient(180deg, rgb(43 38 32 / 0) 45%, rgb(43 38 32 / 0.7) 100%);
+}
+
+/* Warm ground behind an image while it decodes, so no tile flashes grey. */
+.tile-ground {
+  background: radial-gradient(120% 90% at 30% 35%, #efe4d2 0%, #d5c2a6 55%, #9d8163 100%);
+}
+
+/* Scroll reveal — released by the IntersectionObserver in Reveal.tsx. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.8s ease,
+    transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+[data-reveal][data-shown] {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Marquee — two identical halves, so -50% lands on the seam and loops cleanly. */
+@keyframes walnut-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: walnut-marquee 36s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
+/* Toast used by add-to-cart / swatch-request confirmations. */
+@keyframes walnut-toast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 16px);
+  }
+  12%,
+  88% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  z-index: 210;
+  padding: 13px 24px;
+  border-radius: 7px;
+  font-size: 13.5px;
+  background: var(--color-sand-900);
+  color: var(--color-sand-100);
+  box-shadow: var(--shadow-xl);
+  animation: walnut-toast 2.4s ease forwards;
+}
+
+/* Site header: docked → floating. One curve and duration across every animated
+ * property so the bar, the width and the lift land together. The lift is a
+ * composited transform rather than `top`. Transitions stay off until
+ * [data-armed] so the first measurement after hydration lands without a jump. */
+.site-header {
+  --header-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --header-duration: 560ms;
+  transform: translateY(0);
+}
+.site-header[data-armed="true"] {
+  will-change: max-width, transform;
+  transition:
+    max-width var(--header-duration) var(--header-ease),
+    transform var(--header-duration) var(--header-ease),
+    border-radius var(--header-duration) var(--header-ease),
+    background-color var(--header-duration) var(--header-ease),
+    border-color var(--header-duration) var(--header-ease),
+    box-shadow var(--header-duration) var(--header-ease);
+}
+.site-header[data-floating="true"] {
+  transform: translateY(14px);
+}
+
+.site-header[data-armed="true"] :is(.site-header-bar, .site-header-row, .site-header-nav) {
+  transition:
+    max-height var(--header-duration) var(--header-ease),
+    opacity calc(var(--header-duration) * 0.55) var(--header-ease),
+    padding var(--header-duration) var(--header-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header,
+  .site-header[data-armed="true"],
+  .site-header[data-armed="true"] :is(.site-header-bar, .site-header-row, .site-header-nav) {
+    transition: none;
+  }
+  .site-header[data-floating="true"] {
+    transform: none;
+  }
+}
+
+/* Mega-menu drop-in. */
+@keyframes walnut-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.mega-menu {
+  animation: walnut-drop 0.3s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mega-menu {
+    animation: none;
+  }
 }
 
 /* Drawer slide-in animation.

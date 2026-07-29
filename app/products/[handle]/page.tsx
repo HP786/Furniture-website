@@ -48,6 +48,7 @@ export const PRODUCT_QUERY = gql(
         handle
         title
         vendor
+        tags
         description
         descriptionHtml
         requiresSellingPlan

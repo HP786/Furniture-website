@@ -65,14 +65,19 @@ export default async function CollectionsPage({ searchParams }: CollectionsPageP
           </ol>
         </nav>
 
-        <div className="mb-8">
+        <div className="mb-9">
+          <p className="type-overline text-walnut-700 mb-3">Shop</p>
           <h1 className="type-display text-on-surface">Collections</h1>
+          <p className="text-sand-700 mt-3 max-w-[520px] text-[15px]">
+            We group pieces the way people actually shop — by the feeling of a room, the hand of a
+            fabric, the grain of a timber. Start anywhere.
+          </p>
         </div>
 
         <h2 className="sr-only">Browse collections</h2>
         {collections.length > 0 ? (
           <div className="contain-paint">
-            <ul role="list" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ul role="list" className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {collections.map((collection, index) => (
                 <li key={collection.handle}>
                   <CollectionCard collection={collection} priority={index === 0} />

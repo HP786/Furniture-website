@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { CollectionPageData } from "../lib/collection";
 import { shopifyImageUrl, srcSetFor } from "../lib/image";
 import { toJsonLd } from "../lib/json-ld";
+import { collectionHref, type CollectionRef } from "../lib/navigation";
 import { CollectionViewedTracker } from "./AnalyticsTrackers";
 import {
   ActiveFilterChips,
@@ -55,67 +56,101 @@ function CollectionHeader({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: toJsonLd(breadcrumbJsonLd(collection, origin)) }}
       />
-      <nav aria-label="Breadcrumb" className="mb-6">
-        <ol className="text-on-surface-secondary flex items-center gap-1.5 text-sm">
+      <nav aria-label="Breadcrumb" className="mb-5">
+        <ol className="text-sand-600 flex items-center gap-2 text-[12.5px]">
           <li>
-            <Link
-              href="/"
-              className="hover:text-on-surface rounded-sm py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current motion-safe:transition-colors"
-            >
+            <Link href="/" className="hover:text-on-surface rounded-sm motion-safe:transition-colors">
               Home
             </Link>
           </li>
-          <li aria-hidden="true" className="text-on-surface-secondary">
-            /
-          </li>
+          <li aria-hidden="true">/</li>
           <li>
-            <span aria-current="page" className="text-on-surface font-medium">
+            <Link
+              href="/collections"
+              className="hover:text-on-surface rounded-sm motion-safe:transition-colors"
+            >
+              Shop
+            </Link>
+          </li>
+          <li aria-hidden="true">/</li>
+          <li>
+            <span aria-current="page" className="text-on-surface">
               {collection.title}
             </span>
           </li>
         </ol>
       </nav>
-      <div className="mb-8 grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
-        <div>
-          <h1 className="type-display text-on-surface mb-2">{collection.title}</h1>
-          {collection.descriptionHtml ? (
-            <div
-              className="richtext text-on-surface-secondary type-body-sm max-w-2xl"
-              dangerouslySetInnerHTML={{ __html: collection.descriptionHtml }}
-            />
-          ) : collection.description ? (
-            <div className="richtext text-on-surface-secondary type-body-sm max-w-2xl">
-              <p>{collection.description}</p>
-            </div>
+
+      {/* Full-bleed banner. Falls back to the warm gradient ground when the
+          collection has no image, so the headline always has a dark backdrop. */}
+      <div className="tile-ground relative mb-6 h-[220px] overflow-hidden rounded-lg md:h-[300px]">
+        {collection.image ? (
+          <img
+            src={shopifyImageUrl(collection.image.url, { width: 2000, height: 600, crop: "center" })}
+            srcSet={srcSetFor(collection.image.url, { width: 2000, height: 600, crop: "center" })}
+            sizes="100vw"
+            alt=""
+            className="washed h-full w-full object-cover"
+            loading="eager"
+            fetchPriority="high"
+            width={2000}
+            height={600}
+          />
+        ) : null}
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgb(43_38_32/0.6),rgb(43_38_32/0.08))]" />
+        <div className="px-margin absolute inset-0 flex flex-col justify-center md:px-13">
+          <p className="type-overline mb-3 text-[#e2d2bc]">Shop</p>
+          <h1 className="font-heading mb-2.5 text-[32px] leading-[1.04] font-light tracking-[-0.025em] text-white md:text-[54px]">
+            {collection.title}
+          </h1>
+          {collection.description ? (
+            <p className="m-0 max-w-[520px] text-[14px] text-white/85 md:text-[15.5px]">
+              {collection.description}
+            </p>
           ) : null}
         </div>
-        {collection.image ? (
-          <div className="bg-surface-secondary aspect-landscape w-full overflow-hidden md:w-64">
-            <img
-              src={shopifyImageUrl(collection.image.url, {
-                width: 800,
-                height: 450,
-                crop: "center",
-              })}
-              srcSet={srcSetFor(collection.image.url, {
-                width: 800,
-                height: 450,
-                crop: "center",
-              })}
-              sizes="(min-width: 768px) 16rem, 100vw"
-              alt={collection.image.altText ?? collection.title}
-              className="h-full w-full object-cover"
-              width={800}
-              height={450}
-            />
-          </div>
-        ) : null}
       </div>
     </>
   );
 }
 
-function CollectionContent({ data }: { data: CollectionPageData }) {
+/** Quick-jump chips across sibling collections. */
+function CollectionChips({
+  chips,
+  activeHandle,
+}: {
+  chips: CollectionRef[];
+  activeHandle: string;
+}) {
+  if (chips.length === 0) return null;
+
+  return (
+    <nav aria-label="Browse collections" className="mb-8">
+      <ul role="list" className="flex flex-wrap gap-2.5">
+        {chips.map((chip) => {
+          const active = chip.handle === activeHandle;
+          return (
+            <li key={chip.handle}>
+              <Link
+                href={collectionHref(chip.handle)}
+                aria-current={active ? "page" : undefined}
+                className={`focus-visible:outline-accent inline-flex items-center rounded-[7px] border px-4.5 py-2.5 text-[13px] font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors ${
+                  active
+                    ? "border-sand-900 bg-sand-900 text-sand-100"
+                    : "border-border text-on-surface hover:bg-surface-secondary"
+                }`}
+              >
+                {chip.title}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+function CollectionContent({ data, chips }: { data: CollectionPageData; chips: CollectionRef[] }) {
   const state = useCollection();
   const basePath = `/collections/${data.collection.handle}`;
   const { items, pageInfo, pending, setPending } = useLoadMore({
@@ -130,18 +165,19 @@ function CollectionContent({ data }: { data: CollectionPageData }) {
       <div className="max-w-page px-margin mx-auto w-full py-8 md:py-12">
         <CollectionViewedTracker collection={data.collection} />
         <CollectionHeader collection={data.collection} origin={data.origin} />
+        <CollectionChips chips={chips} activeHandle={data.collection.handle} />
 
-        <div className="lg:grid lg:grid-cols-[15rem_1fr] lg:gap-10">
+        <div className="lg:grid lg:grid-cols-[250px_1fr] lg:gap-11">
           <aside className="hidden lg:block" aria-label="Filters">
-            <div className="sticky top-8">
-              <h2 className="type-heading-sm text-on-surface mb-2">Filters</h2>
+            <div className="sticky top-38">
+              <h2 className="type-overline text-walnut-700 mb-3">Filters</h2>
               <FacetForm availableFilters={data.availableFilters} idPrefix="collection-desktop" />
             </div>
           </aside>
 
           <div className="min-w-0">
             <Toolbar
-              countText={`Showing ${items.length}`}
+              countText={`${items.length} ${items.length === 1 ? "piece" : "pieces"}`}
               defaultSortValue={COLLECTION_SORT_OPTIONS[0].value}
               filterDrawerId={FILTER_DRAWER_ID}
             />
@@ -157,12 +193,16 @@ function CollectionContent({ data }: { data: CollectionPageData }) {
                 <ul
                   id="product-grid"
                   role="list"
-                  className="grid grid-cols-2 gap-x-1 gap-y-10 lg:grid-cols-3"
+                  className="grid grid-cols-2 gap-x-5.5 gap-y-6.5 lg:grid-cols-3"
                   data-testid="product-grid"
                 >
                   {items.map((product, index) => (
                     <li key={product.id}>
-                      <ProductCard product={product} priority={index < 3} />
+                      <ProductCard
+                        product={product}
+                        priority={index < 3}
+                        sizes="(min-width: 1024px) 30vw, 50vw"
+                      />
                     </li>
                   ))}
                 </ul>
@@ -206,7 +246,13 @@ function CollectionContent({ data }: { data: CollectionPageData }) {
   );
 }
 
-export function CollectionPageClient({ data }: { data: CollectionPageData }) {
+export function CollectionPageClient({
+  data,
+  chips = [],
+}: {
+  data: CollectionPageData;
+  chips?: CollectionRef[];
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -226,7 +272,7 @@ export function CollectionPageClient({ data }: { data: CollectionPageData }) {
         router.refresh();
       }}
     >
-      <CollectionContent data={data} />
+      <CollectionContent data={data} chips={chips} />
     </CollectionProvider>
   );
 }

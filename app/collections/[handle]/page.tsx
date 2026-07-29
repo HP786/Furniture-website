@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 
 import { CollectionPageClient } from "../../components/CollectionPageClient";
 import { loadCollectionPage } from "../../lib/collection";
+import { loadCollectionIndex } from "../../lib/collection-index";
+import { CATEGORY_HANDLES, pickCollections, ROOM_HANDLES } from "../../lib/navigation";
 import { toURLSearchParams, type NextSearchParams } from "../../lib/url";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +41,26 @@ export async function generateMetadata({ params }: CollectionPageProps): Promise
 export default async function CollectionPage({ params, searchParams }: CollectionPageProps) {
   const { handle } = await params;
   const urlSearch = toURLSearchParams(await searchParams);
-  const data = await loadOrNotFound(handle, urlSearch);
+  const [data, index] = await Promise.all([
+    loadOrNotFound(handle, urlSearch),
+    loadCollectionIndex(),
+  ]);
 
-  return <CollectionPageClient data={data} />;
+  // The chip row is the design's quick-jump between sibling collections. Rooms
+  // come first, then piece types — deduped, since a handle can appear in both
+  // lists, and always led by "Shop All".
+  const siblings = [
+    index.byHandle.get("shop-all"),
+    ...pickCollections(index.byHandle, ROOM_HANDLES),
+    ...pickCollections(index.byHandle, CATEGORY_HANDLES),
+  ].flatMap((collection) => (collection ? [collection] : []));
+
+  const seen = new Set<string>();
+  const chips = siblings.filter((collection) => {
+    if (seen.has(collection.handle)) return false;
+    seen.add(collection.handle);
+    return true;
+  });
+
+  return <CollectionPageClient data={data} chips={chips} />;
 }
