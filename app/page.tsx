@@ -2,7 +2,8 @@ import { gql, type StorefrontApi } from "@shopify/hydrogen";
 import Link from "next/link";
 
 import { CategoryChip, CollectionTile } from "./components/CollectionTile";
-import { ProductCard, PRODUCT_CARD_FRAGMENT, type ProductCardData } from "./components/ProductCard";
+import { ProductCard } from "./components/ProductCard";
+import { PRODUCT_CARD_FRAGMENT, type ProductCardData } from "./lib/product-card-fragment";
 import { ProductRail } from "./components/ProductRail";
 import { Reveal } from "./components/Reveal";
 import { SwatchRequestForm } from "./components/SwatchRequestForm";
@@ -256,7 +257,11 @@ export default async function HomePage() {
         >
           {TRUST_POINTS.map((point) => (
             <li key={point.label} className="flex items-center justify-center gap-3.5">
-              <Icon d={point.d} size={20} className="text-walnut-700 shrink-0" />
+              <Icon
+                d={point.d}
+                size={20}
+                className={`text-walnut-700 shrink-0 ${point.flip ? "-scale-x-100" : ""}`}
+              />
               <span className="text-sand-700 text-[12px] tracking-[0.13em] uppercase">
                 {point.label}
               </span>

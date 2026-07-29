@@ -5,7 +5,7 @@ import type {
   SearchSortKeys,
 } from "@shopify/hydrogen/storefront-api-types";
 
-import { PRODUCT_CARD_FRAGMENT } from "../components/ProductCard";
+import { PRODUCT_CARD_FRAGMENT } from "./product-card-fragment";
 import { getStorefrontClient } from "./storefront";
 import { getRequestOrigin } from "./url";
 

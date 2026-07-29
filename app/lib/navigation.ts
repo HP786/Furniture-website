@@ -324,11 +324,18 @@ export const FOOTER_COLUMNS = [
 ] as const;
 
 export const TRUST_POINTS = [
-  { label: "Australian owned and made", d: "M12 3a9 9 0 1 0 9 9" },
-  { label: "Own it now, pay later", d: "M12 3v18M8 7.5h6a2.5 2.5 0 0 1 0 5H10a2.5 2.5 0 0 0 0 5h6" },
+  { label: "Australian owned and made", d: "M12 3a9 9 0 1 0 9 9", flip: false },
+  {
+    label: "Own it now, pay later",
+    // The dollar glyph draws with its bowls facing left, which reads as a
+    // mirrored "S"; flipping on X puts it the right way round.
+    d: "M12 3v18M8 7.5h6a2.5 2.5 0 0 1 0 5H10a2.5 2.5 0 0 0 0 5h6",
+    flip: true,
+  },
   {
     label: "Free white-glove delivery over $1,500",
     d: "M3 16V7h11v9M14 11h4l3 3v2h-7M6.5 19a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2ZM17.5 19a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2Z",
+    flip: false,
   },
 ] as const;
 

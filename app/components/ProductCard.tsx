@@ -1,70 +1,13 @@
 "use client";
 
-import { gql, type StorefrontApi } from "@shopify/hydrogen";
 import Link from "next/link";
 import { useState } from "react";
 
 import { shopifyImageUrl, srcSetFor } from "../lib/image";
 import { formatPrice } from "../lib/money";
+import type { ProductCardData } from "../lib/product-card-fragment";
 import { subtitleFromTags, swatchFromTags } from "../lib/swatches";
 import { useColourways } from "./FamilyProvider";
-
-export const PRODUCT_CARD_FRAGMENT = gql(`
-  fragment ProductCard on Product {
-    id
-    handle
-    title
-    tags
-    availableForSale
-    featuredImage {
-      url
-      altText
-      width
-      height
-    }
-    images(first: 2) {
-      nodes {
-        url
-        altText
-        width
-        height
-      }
-    }
-    priceRange {
-      minVariantPrice {
-        amount
-        currencyCode
-      }
-      maxVariantPrice {
-        amount
-        currencyCode
-      }
-    }
-    compareAtPriceRange {
-      minVariantPrice {
-        amount
-        currencyCode
-      }
-    }
-  }
-`);
-
-export const PRODUCT_CARD_SHAPE = gql(
-  `
-    query ProductCardShape {
-      products(first: 1) {
-        nodes {
-          ...ProductCard
-        }
-      }
-    }
-  `,
-  [PRODUCT_CARD_FRAGMENT],
-);
-
-export type ProductCardData = StorefrontApi.ResultOf<
-  typeof PRODUCT_CARD_SHAPE
->["products"]["nodes"][number];
 
 function moneyGreater(a: { amount: string } | null | undefined, b: { amount: string }) {
   return Number.parseFloat(a?.amount ?? "0") > Number.parseFloat(b.amount);

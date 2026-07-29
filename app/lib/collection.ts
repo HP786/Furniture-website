@@ -2,7 +2,7 @@ import "server-only";
 import { gql, parseCollectionParams, type StorefrontApi } from "@shopify/hydrogen";
 import type { ProductFilter as StorefrontApiProductFilter } from "@shopify/hydrogen/storefront-api-types";
 
-import { PRODUCT_CARD_FRAGMENT } from "../components/ProductCard";
+import { PRODUCT_CARD_FRAGMENT } from "./product-card-fragment";
 import { getStorefrontClient } from "./storefront";
 import { getRequestOrigin } from "./url";
 

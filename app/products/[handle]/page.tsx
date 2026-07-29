@@ -2,7 +2,7 @@ import { getSelectedProductOptions, gql } from "@shopify/hydrogen";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { PRODUCT_CARD_FRAGMENT } from "../../components/ProductCard";
+import { PRODUCT_CARD_FRAGMENT } from "../../lib/product-card-fragment";
 import { ProductDetails } from "../../components/ProductDetails";
 import { getStorefrontClient } from "../../lib/storefront";
 import { toURLSearchParams, type NextSearchParams } from "../../lib/url";
