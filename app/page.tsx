@@ -11,6 +11,7 @@ import { Icon, ICON_PATHS } from "./components/WalnutMark";
 import { countLabel, loadCollectionIndex } from "./lib/collection-index";
 import { shopifyImageUrl, srcSetFor } from "./lib/image";
 import {
+  BRAND_NAME,
   CATEGORY_HANDLES,
   collectionHref,
   CURATED_HANDLES,
@@ -249,12 +250,41 @@ export default async function HomePage() {
 
       <Hero collection={heroCollection} image={EDITORIAL_IMAGES.hero} />
 
-      {/* Trust bar */}
-      <section className="border-border border-b bg-[#f4ecdd]" aria-label="Why shop with Walnut">
-        <ul
-          role="list"
-          className="max-w-page px-margin mx-auto grid gap-5 py-6 md:grid-cols-3"
-        >
+      {/* Trust bar. Three static columns from md; below that the points would
+          stack into a tall block, so they loop as a marquee instead. */}
+      <section className="border-border border-b bg-[#f4ecdd]" aria-label={`Why shop with ${BRAND_NAME}`}>
+        <div className="overflow-hidden py-4 md:hidden">
+          <div className="marquee-track-slow" aria-hidden="true">
+            {[0, 1].map((half) => (
+              <div key={half} className="flex">
+                {TRUST_POINTS.map((point) => (
+                  <span
+                    key={`${half}-${point.label}`}
+                    className="flex shrink-0 items-center gap-3 px-6"
+                  >
+                    <Icon
+                      d={point.d}
+                      size={18}
+                      className={`text-walnut-700 shrink-0 ${point.flip ? "-scale-x-100" : ""}`}
+                    />
+                    <span className="text-sand-700 whitespace-nowrap text-[11px] tracking-[0.13em] uppercase">
+                      {point.label}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
+          {/* The loop duplicates its items, so the readable copy is offered
+              once here rather than twice through the marquee. */}
+          <ul role="list" className="sr-only">
+            {TRUST_POINTS.map((point) => (
+              <li key={point.label}>{point.label}</li>
+            ))}
+          </ul>
+        </div>
+
+        <ul role="list" className="max-w-page px-margin mx-auto hidden gap-5 py-6 md:grid md:grid-cols-3">
           {TRUST_POINTS.map((point) => (
             <li key={point.label} className="flex items-center justify-center gap-3.5">
               <Icon
@@ -270,28 +300,39 @@ export default async function HomePage() {
         </ul>
       </section>
 
-      {/* Shop by room */}
+      {/* Shop by room — a mosaic from md, a drifting carousel below it. */}
       {rooms.length > 0 ? (
-        <section className="max-w-page px-margin mx-auto pt-16 md:pt-22" aria-labelledby="rooms-heading">
-          <div id="rooms-heading">
-            <SectionHeading
-              title="Shop by room"
-              href="/collections"
-              linkLabel="View all rooms"
-            />
-          </div>
-          <ul role="list" data-reveal className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
-            {rooms.map((room, roomIndex) => (
-              <li key={room.handle} className={ROOM_SPANS[roomIndex] ?? "lg:col-span-4"}>
-                <CollectionTile
-                  collection={room}
-                  heightClass="h-[320px] md:h-[460px]"
-                  sizes="(min-width: 1024px) 40vw, (min-width: 640px) 50vw, 100vw"
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
+        <>
+          <section className="pt-14 md:hidden" aria-label="Shop by room">
+            <ProductRail title="Shop by room" viewAllHref="/collections" viewAllLabel="View all rooms">
+              {rooms.map((room) => (
+                <li key={`m-room-${room.handle}`} className="w-[280px] shrink-0">
+                  <CollectionTile collection={room} heightClass="h-[340px]" sizes="280px" />
+                </li>
+              ))}
+            </ProductRail>
+          </section>
+
+          <section
+            className="max-w-page px-margin mx-auto hidden pt-16 md:block md:pt-22"
+            aria-labelledby="rooms-heading"
+          >
+            <div id="rooms-heading">
+              <SectionHeading title="Shop by room" href="/collections" linkLabel="View all rooms" />
+            </div>
+            <ul role="list" data-reveal className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
+              {rooms.map((room, roomIndex) => (
+                <li key={room.handle} className={ROOM_SPANS[roomIndex] ?? "lg:col-span-4"}>
+                  <CollectionTile
+                    collection={room}
+                    heightClass="h-[320px] md:h-[460px]"
+                    sizes="(min-width: 1024px) 40vw, (min-width: 640px) 50vw, 100vw"
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
       ) : null}
 
       <div className="mt-20 md:mt-25">

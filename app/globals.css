@@ -101,8 +101,15 @@ body {
   width: max-content;
   animation: walnut-marquee 36s linear infinite;
 }
+/* Same loop, slower, for the mobile trust bar. */
+.marquee-track-slow {
+  display: flex;
+  width: max-content;
+  animation: walnut-marquee 22s linear infinite;
+}
 @media (prefers-reduced-motion: reduce) {
-  .marquee-track {
+  .marquee-track,
+  .marquee-track-slow {
     animation: none;
   }
 }
