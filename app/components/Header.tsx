@@ -29,22 +29,27 @@ function displayCount(count: number) {
 // that restores scroll — the first measurement can differ from the server's
 // docked default, and transitioning into it reads as a jitter. So the first
 // measurement is applied without animation and only later changes animate.
-function useScrolledPast(threshold: number) {
+// Separate thresholds so the header cannot flutter when you park on the
+// boundary: it lifts at `enter` and only settles back once you return to
+// `exit`, well above it.
+function useScrolledPast(enter: number, exit: number) {
   const [scrolled, setScrolled] = useState(false);
   const [armed, setArmed] = useState(false);
 
   useEffect(() => {
     let frame = 0;
-    const measure = () => window.scrollY > threshold;
 
-    setScrolled(measure());
+    const apply = () =>
+      setScrolled((was) => (was ? window.scrollY > exit : window.scrollY > enter));
+
+    apply();
     const arm = requestAnimationFrame(() => setArmed(true));
 
     const onScroll = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
-        setScrolled(measure());
+        apply();
       });
     };
 
@@ -54,7 +59,7 @@ function useScrolledPast(threshold: number) {
       cancelAnimationFrame(arm);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [threshold]);
+  }, [enter, exit]);
 
   return { scrolled, armed };
 }
@@ -140,7 +145,7 @@ export function Header({
   const router = useRouter();
   const totalQuantity = useCart((state) => state.data.totalQuantity);
   const badge = displayCount(totalQuantity);
-  const { scrolled, armed } = useScrolledPast(40);
+  const { scrolled, armed } = useScrolledPast(140, 90);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
