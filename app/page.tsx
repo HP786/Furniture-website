@@ -2,6 +2,7 @@ import { gql, type StorefrontApi } from "@shopify/hydrogen";
 import Link from "next/link";
 
 import { CategoryChip, CollectionTile } from "./components/CollectionTile";
+import { HomeTabs, type HomeTab } from "./components/HomeTabs";
 import { ProductCard } from "./components/ProductCard";
 import { PRODUCT_CARD_FRAGMENT, type ProductCardData } from "./lib/product-card-fragment";
 import { ProductRail } from "./components/ProductRail";
@@ -79,34 +80,6 @@ async function loadHomePage() {
     products: (home?.products.nodes ?? []) as ProductCardData[],
     index: collectionIndex,
   };
-}
-
-function SectionHeading({
-  title,
-  href,
-  linkLabel,
-}: {
-  title: string;
-  href?: string;
-  linkLabel?: string;
-}) {
-  return (
-    <div
-      data-reveal
-      className="mb-8 flex items-end justify-between gap-6"
-    >
-      <h2 className="type-display m-0">{title}</h2>
-      {href && linkLabel ? (
-        <Link
-          href={href}
-          className="text-walnut-700 focus-visible:outline-accent inline-flex shrink-0 items-center gap-2 text-[13px] tracking-[0.1em] uppercase no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-        >
-          {linkLabel}
-          <Icon d={ICON_PATHS.arrowRight} size={16} />
-        </Link>
-      ) : null}
-    </div>
-  );
 }
 
 function Hero({ collection, image }: { collection: CollectionRef | undefined; image: EditorialImage }) {
@@ -244,6 +217,109 @@ export default async function HomePage() {
     "pale-and-quiet": EDITORIAL_IMAGES.editorialColour,
   };
 
+  // The three browse sections, now panels of one tabbed block. Each is dropped
+  // if it has nothing to show, so an empty tab is never offered.
+  const browseTabs: HomeTab[] = [];
+
+  if (categories.length > 0) {
+    browseTabs.push({
+      id: "categories",
+      label: "Popular categories",
+      panel: (
+        <div className="max-w-page px-margin mx-auto">
+          <ul
+            role="list"
+            className="grid grid-cols-3 gap-x-6 gap-y-8 md:grid-cols-5 lg:gap-x-6 lg:gap-y-8"
+          >
+            {categories.map((category) => (
+              <li key={`cat-${category.handle}`}>
+                <CategoryChip collection={category} />
+              </li>
+            ))}
+          </ul>
+          <div className="mt-9 flex justify-center">
+            <Link
+              href="/collections"
+              className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              View all categories
+              <Icon d={ICON_PATHS.arrowRight} size={16} />
+            </Link>
+          </div>
+        </div>
+      ),
+    });
+  }
+
+  if (rooms.length > 0) {
+    browseTabs.push({
+      id: "rooms",
+      label: "Shop by room",
+      panel: (
+        <>
+          <div className="md:hidden">
+            <ProductRail
+              title="Shop by room"
+              headingHidden
+              viewAllHref="/collections"
+              viewAllLabel="View all rooms"
+            >
+              {rooms.map((room) => (
+                <li key={`m-room-${room.handle}`} className="w-[280px] shrink-0">
+                  <CollectionTile collection={room} heightClass="h-[340px]" sizes="280px" />
+                </li>
+              ))}
+            </ProductRail>
+          </div>
+
+          <div className="max-w-page px-margin mx-auto hidden md:block">
+            <ul role="list" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
+              {rooms.map((room, roomIndex) => (
+                <li key={room.handle} className={ROOM_SPANS[roomIndex] ?? "lg:col-span-4"}>
+                  <CollectionTile
+                    collection={room}
+                    heightClass="h-[320px] md:h-[460px]"
+                    sizes="(min-width: 1024px) 40vw, (min-width: 640px) 50vw, 100vw"
+                  />
+                </li>
+              ))}
+            </ul>
+            <div className="mt-9 flex justify-center">
+              <Link
+                href="/collections"
+                className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                View all rooms
+                <Icon d={ICON_PATHS.arrowRight} size={16} />
+              </Link>
+            </div>
+          </div>
+        </>
+      ),
+    });
+  }
+
+  if (products.length > 0) {
+    browseTabs.push({
+      id: "trending",
+      label: "Trending pieces",
+      panel: (
+        <ProductRail
+          title="Trending pieces"
+          headingHidden
+          viewAllHref={collectionHref("shop-all")}
+          viewAllLabel="View all"
+        >
+          {products.map((product, productIndex) => (
+            <li key={product.id} className="w-[240px] shrink-0 md:w-[308px]">
+              <ProductCard product={product} priority={productIndex < 2} sizes="308px" />
+            </li>
+          ))}
+        </ProductRail>
+      ),
+    });
+  }
+
   return (
     <main id="main-content" tabIndex={-1} className="flex-1">
       <Reveal />
@@ -300,40 +376,9 @@ export default async function HomePage() {
         </ul>
       </section>
 
-      {/* Shop by room — a mosaic from md, a drifting carousel below it. */}
-      {rooms.length > 0 ? (
-        <>
-          <section className="pt-14 md:hidden" aria-label="Shop by room">
-            <ProductRail title="Shop by room" viewAllHref="/collections" viewAllLabel="View all rooms">
-              {rooms.map((room) => (
-                <li key={`m-room-${room.handle}`} className="w-[280px] shrink-0">
-                  <CollectionTile collection={room} heightClass="h-[340px]" sizes="280px" />
-                </li>
-              ))}
-            </ProductRail>
-          </section>
-
-          <section
-            className="max-w-page px-margin mx-auto hidden pt-16 md:block md:pt-22"
-            aria-labelledby="rooms-heading"
-          >
-            <div id="rooms-heading">
-              <SectionHeading title="Shop by room" href="/collections" linkLabel="View all rooms" />
-            </div>
-            <ul role="list" data-reveal className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
-              {rooms.map((room, roomIndex) => (
-                <li key={room.handle} className={ROOM_SPANS[roomIndex] ?? "lg:col-span-4"}>
-                  <CollectionTile
-                    collection={room}
-                    heightClass="h-[320px] md:h-[460px]"
-                    sizes="(min-width: 1024px) 40vw, (min-width: 640px) 50vw, 100vw"
-                  />
-                </li>
-              ))}
-            </ul>
-          </section>
-        </>
-      ) : null}
+      {/* One tabbed browser instead of three stacked sections, so the range is
+          reachable without scrolling past it. */}
+      {browseTabs.length > 0 ? <HomeTabs tabs={browseTabs} /> : null}
 
       <div className="mt-20 md:mt-25">
         <BandSection
@@ -345,44 +390,6 @@ export default async function HomePage() {
           cta="Shop the look"
         />
       </div>
-
-      {/* Trending rail */}
-      {products.length > 0 ? (
-        <section className="pt-16 md:pt-22" aria-label="Trending pieces">
-          <ProductRail
-            title="Trending pieces"
-            viewAllHref={collectionHref("shop-all")}
-            viewAllLabel="View all"
-          >
-            {products.map((product, productIndex) => (
-              <li key={product.id} className="w-[240px] shrink-0 md:w-[308px]">
-                <ProductCard product={product} priority={productIndex < 2} sizes="308px" />
-              </li>
-            ))}
-          </ProductRail>
-        </section>
-      ) : null}
-
-      {/* Popular categories */}
-      {categories.length > 0 ? (
-        <section className="max-w-page px-margin mx-auto py-16 md:py-20" aria-labelledby="categories-heading">
-          <div data-reveal>
-            <h2 id="categories-heading" className="type-display mb-8">
-              Popular categories
-            </h2>
-            <ul
-              role="list"
-              className="grid grid-cols-3 gap-x-6 gap-y-8 md:grid-cols-5 lg:gap-x-6 lg:gap-y-8"
-            >
-              {categories.map((category) => (
-                <li key={`cat-${category.handle}`}>
-                  <CategoryChip collection={category} />
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-      ) : null}
 
       {/* Three editorial feature panels */}
       <section className="max-w-page px-margin mx-auto" aria-label="Featured collections">

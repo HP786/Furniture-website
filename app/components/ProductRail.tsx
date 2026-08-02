@@ -5,10 +5,12 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { Icon, ICON_PATHS } from "./WalnutMark";
 
 /**
- * Scrolling rail with prev/next controls and a slow auto-drift. Native scroll
- * does the work, so touch, trackpad and keyboard all keep working. The drift
- * pauses on hover/focus/touch and under reduced motion, and reverses at each
- * end rather than duplicating cards (which would repeat products to a reader).
+ * Scrolling rail with prev/next controls and a slow auto-drift.
+ *
+ * Native scroll does the work, so swipe, trackpad, arrows and keyboard all
+ * work. The drift runs on fine-pointer devices only — it pauses on hover, after
+ * any manual scroll, and under reduced motion — and reverses at each end rather
+ * than duplicating cards, which would repeat products to a screen reader.
  */
 export function ProductRail({
   title,
@@ -16,12 +18,16 @@ export function ProductRail({
   viewAllHref,
   viewAllLabel = "View all",
   autoScroll = true,
+  headingHidden = false,
 }: {
   title: string;
   children: ReactNode;
   viewAllHref?: string;
   viewAllLabel?: string;
   autoScroll?: boolean;
+  /** Inside a tab panel the tab already names the rail, so the visible
+   *  heading would repeat it. It stays in the accessibility tree either way. */
+  headingHidden?: boolean;
 }) {
   const railRef = useRef<HTMLDivElement>(null);
   const [atStart, setAtStart] = useState(true);
@@ -34,13 +40,13 @@ export function ProductRail({
   // Hover holds the drift indefinitely, rather than only for the handoff
   // window — a pointer resting on the rail should keep it still.
   const hovering = useRef(false);
-  // The offset the drift last wrote. Any scroll landing somewhere else came
-  // from the user — that comparison is what distinguishes the two, since a
-  // touch drag and a programmatic write fire the same scroll event.
-  const driftAt = useRef<number | null>(null);
 
   const HANDOFF_MS = 2500;
 
+  // Handoff is driven by input events only. The obvious alternative — compare
+  // scrollLeft against the offset the drift last wrote — does not work: scroll
+  // events arrive a frame or more late, so the drift reads its own stale
+  // positions as user input and permanently cancels itself.
   const markUserScroll = useCallback(() => {
     userScrollAt.current = performance.now();
   }, []);
@@ -52,21 +58,21 @@ export function ProductRail({
   const syncEdges = useCallback(() => {
     const rail = railRef.current;
     if (!rail) return;
-
-    if (driftAt.current === null || Math.abs(rail.scrollLeft - driftAt.current) > 2) {
-      markUserScroll();
-    }
-
     const max = rail.scrollWidth - rail.clientWidth;
     setAtStart(rail.scrollLeft <= 1);
     setAtEnd(rail.scrollLeft >= max - 1);
-  }, [markUserScroll]);
+  }, []);
 
   useEffect(() => {
     if (!autoScroll) return;
     const rail = railRef.current;
     if (!rail) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // No drift on touch devices. A touch drag is scrolled by the compositor,
+    // but this loop writes scrollLeft from the main thread every frame, which
+    // cancels that scroll mid-gesture and makes the rail feel stuck. Swiping is
+    // the primary way to move a rail on a phone, so it wins.
+    if (window.matchMedia("(pointer: coarse)").matches) return;
 
     let frame = 0;
     let last = performance.now();
@@ -82,7 +88,6 @@ export function ProductRail({
       if (handsOff || max <= 8) {
         // Stay where the user left it, and resume drifting from there.
         position = rail.scrollLeft;
-        driftAt.current = null;
       } else {
         position += direction * delta * 0.045;
         if (position >= max) {
@@ -92,9 +97,7 @@ export function ProductRail({
           position = 0;
           direction = 1;
         }
-        const next = Math.round(position);
-        driftAt.current = next;
-        rail.scrollLeft = next;
+        rail.scrollLeft = Math.round(position);
       }
 
       frame = requestAnimationFrame(step);
@@ -115,8 +118,10 @@ export function ProductRail({
 
   return (
     <>
-      <div className="max-w-page px-margin mx-auto mb-8 flex items-end justify-between gap-6">
-        <h2 className="type-display m-0">{title}</h2>
+      <div
+        className={`max-w-page px-margin mx-auto flex items-end gap-6 ${headingHidden ? "mb-4 justify-end" : "mb-8 justify-between"}`}
+      >
+        <h2 className={headingHidden ? "sr-only" : "type-display m-0"}>{title}</h2>
         <div className="flex items-center gap-3">
           {viewAllHref ? (
             <a

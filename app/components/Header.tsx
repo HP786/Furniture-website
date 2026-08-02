@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 
 import { useCart } from "../lib/cart";
 import { CART_DRAWER_ID, openCartDrawer } from "../lib/cart-drawer";
-import { BRAND_NAME, collectionHref, type NavGroup } from "../lib/navigation";
+import { collectionHref, type NavGroup } from "../lib/navigation";
 import { shopifyImageUrl } from "../lib/image";
 import { MobileNav, MobileNavTrigger } from "./MobileNav";
 import { SearchAutocomplete } from "./SearchAutocomplete";
