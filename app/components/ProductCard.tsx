@@ -17,10 +17,14 @@ export function ProductCard({
   product,
   priority = false,
   sizes = "(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw",
+  /** Square crops let a 2x2 grid of cards fit a phone screen; the taller 4:5
+   *  portrait is the default everywhere else. */
+  aspectClass = "aspect-[4/5]",
 }: {
   product: ProductCardData;
   priority?: boolean;
   sizes?: string;
+  aspectClass?: string;
 }) {
   const colourways = useColourways(product.title);
   // Hovering a swatch previews that colourway in place; the swatch itself is a
@@ -47,7 +51,9 @@ export function ProductCard({
       aria-label={product.title}
       data-testid="product-card"
     >
-      <div className="rounded-lg bg-surface-secondary relative block aspect-[4/5] overflow-hidden">
+      <div
+        className={`rounded-lg bg-surface-secondary relative block overflow-hidden ${aspectClass}`}
+      >
         {image ? (
           <div className="h-full w-full motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out motion-safe:group-hover:scale-105">
             <img

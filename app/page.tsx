@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { CategoryChip, CollectionTile } from "./components/CollectionTile";
 import { HomeTabs, type HomeTab } from "./components/HomeTabs";
+import { MobileProductPager } from "./components/MobileProductPager";
 import { ProductCard } from "./components/ProductCard";
 import { PRODUCT_CARD_FRAGMENT, type ProductCardData } from "./lib/product-card-fragment";
 import { ProductRail } from "./components/ProductRail";
@@ -309,22 +310,61 @@ export default async function HomePage() {
   }
 
   if (products.length > 0) {
+    // Mobile shows four at a time, so chunk the run into pages of four.
+    const productPages: ProductCardData[][] = [];
+    for (let index = 0; index < products.length; index += 4) {
+      productPages.push(products.slice(index, index + 4));
+    }
+
     browseTabs.push({
       id: "trending",
       label: "Trending pieces",
       panel: (
-        <ProductRail
-          title="Trending pieces"
-          headingHidden
-          viewAllHref={collectionHref("shop-all")}
-          viewAllLabel="View all"
-        >
-          {products.map((product, productIndex) => (
-            <li key={product.id} className="w-[240px] shrink-0 md:w-[308px]">
-              <ProductCard product={product} priority={productIndex < 2} sizes="308px" />
-            </li>
-          ))}
-        </ProductRail>
+        <>
+          <div className="md:hidden">
+            <MobileProductPager
+              label="Trending pieces"
+              pages={productPages.map((page, pageIndex) => (
+                <ul key={pageIndex} role="list" className="grid grid-cols-2 gap-x-4 gap-y-7">
+                  {page.map((product, productIndex) => (
+                    <li key={product.id}>
+                      <ProductCard
+                        product={product}
+                        priority={pageIndex === 0 && productIndex < 2}
+                        sizes="50vw"
+                        aspectClass="aspect-square"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ))}
+            />
+            <div className="mt-7 flex justify-center">
+              <Link
+                href={collectionHref("shop-all")}
+                className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                View all
+                <Icon d={ICON_PATHS.arrowRight} size={16} />
+              </Link>
+            </div>
+          </div>
+
+          <div className="hidden md:block">
+            <ProductRail
+              title="Trending pieces"
+              headingHidden
+              viewAllHref={collectionHref("shop-all")}
+              viewAllLabel="View all"
+            >
+              {products.map((product, productIndex) => (
+                <li key={product.id} className="w-[308px] shrink-0">
+                  <ProductCard product={product} priority={productIndex < 2} sizes="308px" />
+                </li>
+              ))}
+            </ProductRail>
+          </div>
+        </>
       ),
     });
   }
