@@ -7,7 +7,6 @@ export type CollectionRef = {
   handle: string;
   title: string;
   image: { url: string; altText: string | null } | null;
-  productCount: number | null;
 };
 
 export type NavItem = { handle: string; title: string };
@@ -124,7 +123,7 @@ const BLUEPRINT: GroupBlueprint[] = [
     ],
     promo: {
       handle: "long-afternoons",
-      body: "Sixty-four pieces, chosen to sit quietly together.",
+      body: "Chosen to sit quietly together.",
     },
   },
   {
@@ -262,12 +261,6 @@ export function pickCollections(
     if (collection) picked.push(collection);
   }
   return picked;
-}
-
-export function productCountLabel(count: number | null) {
-  if (count === null) return "";
-  if (count === 0) return "Coming soon";
-  return `${count} ${count === 1 ? "piece" : "pieces"}`;
 }
 
 export const FOOTER_COLUMNS = [

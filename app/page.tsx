@@ -10,7 +10,7 @@ import { ProductRail } from "./components/ProductRail";
 import { Reveal } from "./components/Reveal";
 import { SwatchRequestForm } from "./components/SwatchRequestForm";
 import { Icon, ICON_PATHS } from "./components/WalnutMark";
-import { countLabel, loadCollectionIndex } from "./lib/collection-index";
+import { loadCollectionIndex } from "./lib/collection-index";
 import { shopifyImageUrl, srcSetFor } from "./lib/image";
 import {
   BRAND_NAME,
@@ -616,13 +616,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Collection counts are surfaced for screen readers as a text summary so
-          the mosaic's hover-revealed counts are not the only way to get them. */}
-      <p className="sr-only">
-        {rooms
-          .map((room) => `${room.title}: ${countLabel(room.productCount)}`)
-          .join(". ")}
-      </p>
     </main>
   );
 }

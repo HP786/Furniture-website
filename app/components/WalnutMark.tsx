@@ -83,4 +83,5 @@ export const ICON_PATHS = {
   menu: "M4 7h16M4 12h16M4 17h11",
   close: "M6 6l12 12M18 6 6 18",
   home: "M3 11 12 4l9 7v9H3Z",
+  grid: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z",
 } as const;

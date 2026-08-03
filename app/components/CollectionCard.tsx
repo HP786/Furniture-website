@@ -3,8 +3,6 @@ import Link from "next/link";
 
 import { shopifyImageUrl, srcSetFor } from "../lib/image";
 
-export const COLLECTION_CARD_PRODUCT_COUNT_LIMIT = 100;
-
 export const COLLECTION_CARD_FRAGMENT = gql(`
   fragment CollectionCard on Collection {
     handle
@@ -23,14 +21,6 @@ export const COLLECTION_CARD_FRAGMENT = gql(`
           width
           height
         }
-      }
-    }
-    productCountProbe: products(first: 100) {
-      nodes {
-        id
-      }
-      pageInfo {
-        hasNextPage
       }
     }
   }
@@ -57,16 +47,6 @@ type CollectionCardImage = NonNullable<CollectionCardData["image"]>;
 
 function collectionImage(collection: CollectionCardData): CollectionCardImage | null {
   return collection.image ?? collection.products.nodes[0]?.featuredImage ?? null;
-}
-
-function productCountText(collection: CollectionCardData) {
-  if (collection.productCountProbe.pageInfo.hasNextPage) {
-    return `${COLLECTION_CARD_PRODUCT_COUNT_LIMIT}+ products`;
-  }
-
-  const count = collection.productCountProbe.nodes.length;
-  if (count === 0) return "Coming soon";
-  return `${count} ${count === 1 ? "piece" : "pieces"}`;
 }
 
 export function CollectionCard({
@@ -112,7 +92,6 @@ export function CollectionCard({
             {collection.title}
           </Link>
         </h3>
-        <p className="mt-1 text-[12.5px] text-white/85">{productCountText(collection)}</p>
       </div>
     </article>
   );

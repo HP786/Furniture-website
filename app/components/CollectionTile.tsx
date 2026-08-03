@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { countLabel } from "../lib/collection-index";
 import { shopifyImageUrl, srcSetFor } from "../lib/image";
 import { collectionHref, type CollectionRef } from "../lib/navigation";
 import { Icon, ICON_PATHS } from "./WalnutMark";
@@ -13,14 +12,12 @@ export function CollectionTile({
   collection,
   className = "",
   heightClass = "h-[300px]",
-  showCount = true,
   priority = false,
   sizes = "(min-width: 1024px) 33vw, 100vw",
 }: {
   collection: CollectionRef;
   className?: string;
   heightClass?: string;
-  showCount?: boolean;
   priority?: boolean;
   sizes?: string;
 }) {
@@ -58,12 +55,12 @@ export function CollectionTile({
             {collection.title}
           </Link>
         </h3>
-        {showCount ? (
-          <p className="mt-1.5 flex items-center gap-2 text-[13px] text-white/90 motion-safe:transition-opacity md:opacity-0 md:group-hover:opacity-100">
-            {countLabel(collection.productCount)}
-            <Icon d={ICON_PATHS.arrowRight} size={15} />
-          </p>
-        ) : null}
+        <p
+          aria-hidden="true"
+          className="mt-1.5 flex items-center text-white/90 motion-safe:transition-opacity md:opacity-0 md:group-hover:opacity-100"
+        >
+          <Icon d={ICON_PATHS.arrowRight} size={15} />
+        </p>
       </div>
     </article>
   );

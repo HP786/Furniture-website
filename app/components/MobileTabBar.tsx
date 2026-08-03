@@ -8,9 +8,11 @@ import { useCart } from "../lib/cart";
 import { collectionHref } from "../lib/navigation";
 import { Icon, ICON_PATHS } from "./WalnutMark";
 
+// Each icon has to read as the page it opens: a house for home, a grid of
+// tiles for browsing everything, a bag for the cart (matching the header's).
 const TABS = [
-  { label: "Shop", href: collectionHref("shop-all"), d: ICON_PATHS.bag },
-  { label: "Rooms", href: "/collections", d: ICON_PATHS.home },
+  { label: "Home", href: "/", d: ICON_PATHS.home },
+  { label: "Shop", href: collectionHref("shop-all"), d: ICON_PATHS.grid },
   { label: "Search", href: "/search", d: ICON_PATHS.search },
   { label: "Saved", href: collectionHref("long-afternoons"), d: ICON_PATHS.heart },
 ] as const;
@@ -60,7 +62,7 @@ export function MobileTabBar() {
             className="text-sand-500 min-w-touch-target relative flex cursor-pointer flex-col items-center gap-1.5 bg-transparent text-[10.5px]"
           >
             <span className="relative">
-              <Icon d={ICON_PATHS.user} size={21} />
+              <Icon d={ICON_PATHS.bag} size={21} />
               {totalQuantity > 0 ? (
                 <span className="bg-interactive text-interactive-text absolute -top-1.5 -end-2 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-semibold">
                   {totalQuantity > 99 ? "99+" : totalQuantity}
