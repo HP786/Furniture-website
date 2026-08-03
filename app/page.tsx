@@ -440,7 +440,9 @@ export default async function HomePage() {
         />
       </div>
 
-      <div className="mt-20 md:mt-24">
+      {/* Flush against the band above — the two run as one diptych. The gap
+          here was spacing for the feature panels that used to sit between them. */}
+      <div>
         <BandSection
           collection={visitCollection}
           image={EDITORIAL_IMAGES.bandVisit}
