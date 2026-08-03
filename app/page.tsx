@@ -18,7 +18,6 @@ import {
   CURATED_HANDLES,
   EDITORIAL_CARDS,
   EDITORIAL_IMAGES,
-  FEATURE_PANELS,
   MARQUEE_PHRASES,
   pickCollections,
   ROOM_HANDLES,
@@ -205,51 +204,17 @@ export default async function HomePage() {
   const bandCollection = byHandle.get("warm-timber") ?? heroCollection;
   const visitCollection = byHandle.get("soft-texture") ?? heroCollection;
 
-  // The three feature panels and two journal cards each want their own shot;
-  // where the design used a dedicated editorial photo rather than the
-  // collection's own image, that override is keyed here.
-  const featureImageOverrides: Record<string, EditorialImage> = {
-    "long-afternoons": EDITORIAL_IMAGES.featureLeather,
-    "soft-texture": EDITORIAL_IMAGES.bandVisit,
-  };
+  // The journal cards each want their own shot; where a dedicated editorial
+  // photo reads better than the collection's own image, it is keyed here.
   const editorialImageOverrides: Record<string, EditorialImage> = {
     "warm-timber": EDITORIAL_IMAGES.hero,
     "pale-and-quiet": EDITORIAL_IMAGES.editorialColour,
   };
 
   // The three browse sections, now panels of one tabbed block. Each is dropped
-  // if it has nothing to show, so an empty tab is never offered.
+  // if it has nothing to show, so an empty tab is never offered. Order matters:
+  // the first entry is the tab that opens by default.
   const browseTabs: HomeTab[] = [];
-
-  if (categories.length > 0) {
-    browseTabs.push({
-      id: "categories",
-      label: "Popular categories",
-      panel: (
-        <div className="max-w-page px-margin mx-auto">
-          <ul
-            role="list"
-            className="grid grid-cols-3 gap-x-6 gap-y-8 md:grid-cols-5 lg:gap-x-6 lg:gap-y-8"
-          >
-            {categories.map((category) => (
-              <li key={`cat-${category.handle}`}>
-                <CategoryChip collection={category} />
-              </li>
-            ))}
-          </ul>
-          <div className="mt-9 flex justify-center">
-            <Link
-              href="/collections"
-              className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              View all categories
-              <Icon d={ICON_PATHS.arrowRight} size={16} />
-            </Link>
-          </div>
-        </div>
-      ),
-    });
-  }
 
   if (rooms.length > 0) {
     browseTabs.push({
@@ -295,6 +260,36 @@ export default async function HomePage() {
             </div>
           </div>
         </>
+      ),
+    });
+  }
+
+  if (categories.length > 0) {
+    browseTabs.push({
+      id: "categories",
+      label: "Popular categories",
+      panel: (
+        <div className="max-w-page px-margin mx-auto">
+          <ul
+            role="list"
+            className="grid grid-cols-3 gap-x-6 gap-y-8 md:grid-cols-5 lg:gap-x-6 lg:gap-y-8"
+          >
+            {categories.map((category) => (
+              <li key={`cat-${category.handle}`}>
+                <CategoryChip collection={category} />
+              </li>
+            ))}
+          </ul>
+          <div className="mt-9 flex justify-center">
+            <Link
+              href="/collections"
+              className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              View all categories
+              <Icon d={ICON_PATHS.arrowRight} size={16} />
+            </Link>
+          </div>
+        </div>
       ),
     });
   }
@@ -390,62 +385,6 @@ export default async function HomePage() {
           cta="Shop the look"
         />
       </div>
-
-      {/* Three editorial feature panels */}
-      <section className="max-w-page px-margin mx-auto" aria-label="Featured collections">
-        <ul role="list" data-reveal className="grid gap-6 md:grid-cols-3">
-          {FEATURE_PANELS.flatMap((panel) => {
-            const collection = byHandle.get(panel.handle);
-            if (!collection) return [];
-            const image = featureImageOverrides[panel.handle] ?? collection.image;
-            return [
-              <li key={panel.handle} className="flex flex-col gap-5">
-                <Link
-                  href={collectionHref(collection.handle)}
-                  className="group tile-ground relative block h-[340px] overflow-hidden rounded-lg no-underline md:h-[460px]"
-                >
-                  {image ? (
-                    <img
-                      src={shopifyImageUrl(image.url, {
-                        width: 800,
-                        height: 1000,
-                        crop: "center",
-                      })}
-                      srcSet={srcSetFor(image.url, {
-                        width: 800,
-                        height: 1000,
-                        crop: "center",
-                      })}
-                      sizes="(min-width: 768px) 33vw, 100vw"
-                      alt=""
-                      className="washed h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-1000 motion-safe:group-hover:scale-105"
-                      loading="lazy"
-                      width={800}
-                      height={1000}
-                    />
-                  ) : null}
-                  <span className="scrim-tile pointer-events-none absolute inset-0" />
-                  <span className="absolute inset-x-0 bottom-0 block p-8">
-                    <span className="type-overline mb-3 block text-[#e2d2bc]">{panel.kicker}</span>
-                    <span className="font-heading block max-w-[320px] text-[26px] leading-[1.06] font-light tracking-[-0.02em] text-white md:text-[32px]">
-                      {collection.title}
-                    </span>
-                  </span>
-                </Link>
-                <div className="flex items-start justify-between gap-5">
-                  <p className="text-sand-700 max-w-[420px] text-[14px] leading-relaxed text-pretty">
-                    {panel.body}
-                  </p>
-                  <span className="text-walnut-700 flex shrink-0 items-center gap-2 pt-1 text-[12px] tracking-[0.1em] uppercase">
-                    Shop
-                    <Icon d={ICON_PATHS.arrowRight} size={14} />
-                  </span>
-                </div>
-              </li>,
-            ];
-          })}
-        </ul>
-      </section>
 
       <div className="mt-20 md:mt-24">
         <BandSection

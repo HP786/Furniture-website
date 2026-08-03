@@ -89,25 +89,6 @@ export const CATEGORY_HANDLES = [
   "warm-timber",
 ] as const;
 
-/** The three editorial feature panels. */
-export const FEATURE_PANELS = [
-  {
-    handle: "long-afternoons",
-    kicker: "Winter 26",
-    body: "Sofas and armchairs built for sinking into — bouclé, Otto fabric and tan leather, deep-seated and low.",
-  },
-  {
-    handle: "soft-texture",
-    kicker: "The edit",
-    body: "Wool, jute and bouclé in the warm neutrals that make a room feel finished rather than decorated.",
-  },
-  {
-    handle: "dining-tables",
-    kicker: "Made local",
-    body: "Solid oak dining tables and benches, finished in hardwax oil by a workshop twenty minutes from our door.",
-  },
-] as const;
-
 /** The two magazine-style editorial cards below the marquee. */
 export const EDITORIAL_CARDS = [
   {
