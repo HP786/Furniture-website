@@ -181,9 +181,10 @@ export function ProductRail({
           hovering.current = false;
           markUserScroll();
         }}
-        // touch-action pan-x tells the browser this is a horizontal scroller,
-        // so it can hand the gesture straight to the compositor.
-        className="scrollbar-none px-margin touch-pan-x overflow-x-auto overflow-y-hidden overscroll-x-contain"
+        // No touch-action override: `pan-x` would let the browser honour only
+        // horizontal panning, so swiping up to scroll the page while your
+        // finger is on the rail would do nothing.
+        className="scrollbar-none px-margin overflow-x-auto overflow-y-hidden overscroll-x-contain"
         // A scrollable region needs to be focusable to be keyboard-operable.
         tabIndex={0}
         role="group"

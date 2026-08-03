@@ -71,7 +71,11 @@ export function MobileProductPager({
         onTouchStart={markUser}
         onTouchMove={markUser}
         onWheel={markUser}
-        className="scrollbar-none flex snap-x snap-mandatory touch-pan-x overflow-x-auto overscroll-x-contain"
+        // No touch-action override: `pan-x` would let the browser honour only
+        // horizontal panning, so swiping up to scroll the page while your
+        // finger is on the carousel would do nothing. The default lets the
+        // browser pick the axis from the gesture, and keeps pinch-zoom.
+        className="scrollbar-none flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
         role="group"
         aria-label={label}
         tabIndex={0}
