@@ -477,20 +477,19 @@ export default async function HomePage() {
                 </Link>
               </div>
 
-              {/* Mobile: the design runs these as a horizontal carousel. */}
-              <div className="md:hidden">
-                <ProductRail title="Shop by collection" autoScroll>
-                  {curated.map((collection) => (
-                    <li key={`m-${collection.handle}`} className="w-[168px] shrink-0">
-                      <CollectionTile
-                        collection={collection}
-                        heightClass="h-[200px]"
-                        sizes="168px"
-                      />
-                    </li>
-                  ))}
-                </ProductRail>
-              </div>
+              {/* Mobile: all six on screen as a two-column grid, rather than a
+                  carousel that hides most of them off to the side. */}
+              <ul role="list" className="grid grid-cols-2 gap-3 md:hidden">
+                {curated.map((collection) => (
+                  <li key={`m-${collection.handle}`}>
+                    <CollectionTile
+                      collection={collection}
+                      heightClass="h-[150px]"
+                      sizes="50vw"
+                    />
+                  </li>
+                ))}
+              </ul>
 
               <div className="hidden gap-5 md:grid md:grid-cols-2 lg:grid-cols-12">
                 <div className="flex flex-col justify-center pe-0 lg:order-3 lg:col-span-4 lg:pe-8">

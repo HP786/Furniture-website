@@ -8,6 +8,7 @@ import { useCart } from "../lib/cart";
 import { CART_DRAWER_ID, openCartDrawer } from "../lib/cart-drawer";
 import { collectionHref, type NavGroup } from "../lib/navigation";
 import { shopifyImageUrl } from "../lib/image";
+import { useSaved } from "../lib/saved";
 import { MobileNav, MobileNavTrigger } from "./MobileNav";
 import { SearchAutocomplete } from "./SearchAutocomplete";
 import { Icon, ICON_PATHS, WalnutMark, WalnutWordmark } from "./WalnutMark";
@@ -145,6 +146,7 @@ export function Header({
   const router = useRouter();
   const totalQuantity = useCart((state) => state.data.totalQuantity);
   const badge = displayCount(totalQuantity);
+  const { count: savedCount } = useSaved();
   const { scrolled, armed } = useScrolledPast(140, 90);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -258,11 +260,18 @@ export function Header({
             <Icon d={ICON_PATHS.user} />
           </a>
           <Link
-            href={collectionHref("shop-all")}
-            className="button-icon focus-visible:outline-accent hidden rounded-[7px] md:inline-flex"
-            aria-label="Wishlist"
+            href="/saved"
+            className="button-icon focus-visible:outline-accent relative hidden rounded-[7px] md:inline-flex"
+            aria-label={savedCount > 0 ? `Saved (${savedCount})` : "Saved"}
           >
-            <Icon d={ICON_PATHS.heart} />
+            <span className="relative inline-flex size-[18px] items-center justify-center">
+              <Icon d={ICON_PATHS.heart} />
+              {savedCount > 0 ? (
+                <span className="bg-interactive text-interactive-text absolute -top-2 -end-2.5 inline-flex h-[17px] min-w-[17px] items-center justify-center rounded-full px-1 text-[10.5px] font-semibold">
+                  {savedCount > 99 ? "99+" : savedCount}
+                </span>
+              ) : null}
+            </span>
           </Link>
           <button
             type="button"

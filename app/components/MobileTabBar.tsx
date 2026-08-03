@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { CART_DRAWER_ID, openCartDrawer } from "../lib/cart-drawer";
 import { useCart } from "../lib/cart";
 import { collectionHref } from "../lib/navigation";
+import { useSaved } from "../lib/saved";
 import { Icon, ICON_PATHS } from "./WalnutMark";
 
 // Each icon has to read as the page it opens: a house for home, a grid of
@@ -14,7 +15,7 @@ const TABS = [
   { label: "Home", href: "/", d: ICON_PATHS.home },
   { label: "Shop", href: collectionHref("shop-all"), d: ICON_PATHS.grid },
   { label: "Search", href: "/search", d: ICON_PATHS.search },
-  { label: "Saved", href: collectionHref("long-afternoons"), d: ICON_PATHS.heart },
+  { label: "Saved", href: "/saved", d: ICON_PATHS.heart },
 ] as const;
 
 /**
@@ -24,6 +25,7 @@ const TABS = [
 export function MobileTabBar() {
   const pathname = usePathname();
   const totalQuantity = useCart((state) => state.data.totalQuantity);
+  const { count: savedCount } = useSaved();
 
   return (
     <nav
@@ -36,6 +38,7 @@ export function MobileTabBar() {
       >
         {TABS.map((tab) => {
           const active = pathname === tab.href;
+          const badge = tab.href === "/saved" && savedCount > 0 ? savedCount : null;
           return (
             <li key={tab.label}>
               <Link
@@ -45,7 +48,14 @@ export function MobileTabBar() {
                   active ? "text-walnut-700" : "text-sand-500"
                 }`}
               >
-                <Icon d={tab.d} size={21} />
+                <span className="relative">
+                  <Icon d={tab.d} size={21} />
+                  {badge ? (
+                    <span className="bg-interactive text-interactive-text absolute -top-1.5 -end-2 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-semibold">
+                      {badge > 99 ? "99+" : badge}
+                    </span>
+                  ) : null}
+                </span>
                 {tab.label}
               </Link>
             </li>

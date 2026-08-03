@@ -8,6 +8,7 @@ import { formatPrice } from "../lib/money";
 import type { ProductCardData } from "../lib/product-card-fragment";
 import { subtitleFromTags, swatchFromTags } from "../lib/swatches";
 import { useColourways } from "./FamilyProvider";
+import { SaveButton } from "./SaveButton";
 
 function moneyGreater(a: { amount: string } | null | undefined, b: { amount: string }) {
   return Number.parseFloat(a?.amount ?? "0") > Number.parseFloat(b.amount);
@@ -84,6 +85,10 @@ export function ProductCard({
             />
           </div>
         ) : null}
+
+        <div className="absolute end-3.5 top-3.5 z-10">
+          <SaveButton handle={product.handle} title={product.title} />
+        </div>
 
         {soldOut ? (
           <span className="badge-soldout absolute start-3.5 top-3.5 inline-flex items-center rounded-[7px] text-[10.5px] tracking-[0.12em] uppercase">
