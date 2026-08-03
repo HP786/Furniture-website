@@ -222,19 +222,33 @@ export default async function HomePage() {
       label: "Shop by room",
       panel: (
         <>
-          <div className="md:hidden">
-            <ProductRail
-              title="Shop by room"
-              headingHidden
-              viewAllHref="/collections"
-              viewAllLabel="View all rooms"
-            >
-              {rooms.map((room) => (
-                <li key={`m-room-${room.handle}`} className="w-[280px] shrink-0">
-                  <CollectionTile collection={room} heightClass="h-[340px]" sizes="280px" />
+          {/* Mobile: every room fits on screen at once — a two-column mosaic
+              with the first tile spanning the full width, as in the design. No
+              horizontal scrolling to reach the rest. */}
+          <div className="px-margin md:hidden">
+            <ul role="list" className="grid grid-cols-2 gap-3">
+              {rooms.map((room, roomIndex) => (
+                <li
+                  key={`m-room-${room.handle}`}
+                  className={roomIndex === 0 ? "col-span-2" : undefined}
+                >
+                  <CollectionTile
+                    collection={room}
+                    heightClass={roomIndex === 0 ? "h-[190px]" : "h-[150px]"}
+                    sizes={roomIndex === 0 ? "100vw" : "50vw"}
+                  />
                 </li>
               ))}
-            </ProductRail>
+            </ul>
+            <div className="mt-7 flex justify-center">
+              <Link
+                href="/collections"
+                className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                View all rooms
+                <Icon d={ICON_PATHS.arrowRight} size={16} />
+              </Link>
+            </div>
           </div>
 
           <div className="max-w-page px-margin mx-auto hidden md:block">
