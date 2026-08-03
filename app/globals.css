@@ -55,6 +55,26 @@ body {
   );
 }
 /* Tile scrim — the white tile label must clear AA at the foot of the image. */
+/* Split band: one photo carrying copy at both edges. A flat wash keeps the
+   middle readable, and the edge gradients deepen behind each text block. */
+.scrim-split {
+  background:
+    linear-gradient(
+      90deg,
+      rgb(43 38 32 / 0.72) 0%,
+      rgb(43 38 32 / 0.28) 38%,
+      rgb(43 38 32 / 0.28) 62%,
+      rgb(43 38 32 / 0.72) 100%
+    ),
+    linear-gradient(rgb(43 38 32 / 0.34), rgb(43 38 32 / 0.34));
+}
+@media (max-width: 47.99rem) {
+  /* Stacked on mobile, so the edges do no work — even the whole frame. */
+  .scrim-split {
+    background: linear-gradient(rgb(43 38 32 / 0.6), rgb(43 38 32 / 0.6));
+  }
+}
+
 .scrim-tile {
   background: linear-gradient(180deg, rgb(43 38 32 / 0) 30%, rgb(43 38 32 / 0.88) 100%);
 }

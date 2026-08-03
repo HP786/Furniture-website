@@ -133,62 +133,70 @@ function Hero({ collection, image }: { collection: CollectionRef | undefined; im
   );
 }
 
-function BandSection({
-  collection,
-  image,
-  kicker,
-  title,
-  body,
-  cta,
-  align = "start",
-}: {
-  collection: CollectionRef | undefined;
-  image: EditorialImage;
+type BandCopy = {
   kicker: string;
   title: string;
   body: string;
-  cta?: string;
-  align?: "start" | "end";
+  cta?: { label: string; href: string };
+};
+
+function BandCopyBlock({ copy, align }: { copy: BandCopy; align: "start" | "end" }) {
+  return (
+    <div className={`max-w-[460px] ${align === "end" ? "md:ms-auto md:text-right" : ""}`}>
+      <p className="type-overline mb-3.5 text-[#e2d2bc]">{copy.kicker}</p>
+      <h2 className="font-heading mb-3.5 text-[30px] leading-[1.04] font-light tracking-[-0.025em] text-white text-pretty md:text-[42px]">
+        {copy.title}
+      </h2>
+      <p className="text-[15px] leading-relaxed text-white/85 md:text-[16px]">{copy.body}</p>
+      {copy.cta ? (
+        <Link
+          href={copy.cta.href}
+          className="focus-visible:outline-accent mt-6 inline-flex items-center justify-center rounded-[7px] border border-white/55 px-7 py-3.5 text-[14.5px] text-white no-underline hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors"
+        >
+          {copy.cta.label}
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * One photograph carrying both messages — left-aligned and right-aligned on
+ * desktop, stacked on mobile. The scrim darkens both edges rather than one, so
+ * each block clears AA over whatever the photo is doing behind it.
+ */
+function SplitBand({
+  image,
+  left,
+  right,
+}: {
+  image: EditorialImage;
+  left: BandCopy;
+  right: BandCopy;
 }) {
   return (
     <section
       data-reveal
-      className="relative h-[420px] overflow-hidden md:h-[560px]"
-      aria-label={title}
+      className="relative overflow-hidden"
+      aria-label={`${left.title}. ${right.title}`}
     >
       <div className="tile-ground absolute inset-0">
         <img
-          src={shopifyImageUrl(image.url, { width: 2000, height: 1120, crop: "center" })}
-          srcSet={srcSetFor(image.url, { width: 2000, height: 1120, crop: "center" })}
+          src={shopifyImageUrl(image.url, { width: 2400, height: 1200, crop: "center" })}
+          srcSet={srcSetFor(image.url, { width: 2400, height: 1200, crop: "center" })}
           sizes="100vw"
           alt=""
           className="washed h-full w-full object-cover"
           loading="lazy"
-          width={2000}
-          height={1120}
+          width={2400}
+          height={1200}
         />
       </div>
-      <div
-        className={`pointer-events-none absolute inset-0 ${align === "end" ? "scrim-band rotate-180" : "scrim-band"}`}
-      />
-      <div
-        className={`max-w-page px-margin relative mx-auto flex h-full flex-col justify-center ${align === "end" ? "items-end text-right" : ""}`}
-      >
-        <div className="max-w-[520px]">
-          <p className="type-overline mb-4 text-[#e2d2bc]">{kicker}</p>
-          <h2 className="font-heading mb-4 text-[34px] leading-[1.02] font-light tracking-[-0.025em] text-white text-pretty md:text-[56px]">
-            {title}
-          </h2>
-          <p className="text-[15px] leading-relaxed text-white/85 md:text-[16.5px]">{body}</p>
-          {cta && collection ? (
-            <Link
-              href={collectionHref(collection.handle)}
-              className="focus-visible:outline-accent mt-7 inline-flex items-center justify-center rounded-[7px] border border-white/55 px-7 py-4 text-[14.5px] text-white no-underline hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors"
-            >
-              {cta}
-            </Link>
-          ) : null}
-        </div>
+      <div className="scrim-split pointer-events-none absolute inset-0" />
+
+      <div className="max-w-page px-margin relative mx-auto grid gap-12 py-20 md:grid-cols-2 md:gap-16 md:py-28">
+        <BandCopyBlock copy={left} align="start" />
+        <BandCopyBlock copy={right} align="end" />
       </div>
     </section>
   );
@@ -430,26 +438,24 @@ export default async function HomePage() {
       {browseTabs.length > 0 ? <HomeTabs tabs={browseTabs} /> : null}
 
       <div className="mt-20 md:mt-25">
-        <BandSection
-          collection={bandCollection}
+        <SplitBand
           image={EDITORIAL_IMAGES.bandLook}
-          kicker="The Walnur look"
-          title="Natural textures, relaxed rooms"
-          body="Oak, wool, jute and linen — pieces designed for the way Australians actually live, and styled here in a Federation cottage in Northcote."
-          cta="Shop the look"
-        />
-      </div>
-
-      {/* Flush against the band above — the two run as one diptych. The gap
-          here was spacing for the feature panels that used to sit between them. */}
-      <div>
-        <BandSection
-          collection={visitCollection}
-          image={EDITORIAL_IMAGES.bandVisit}
-          kicker="Visit us"
-          title="See it, sit in it, take a sample home"
-          body="Every fabric and finish is on the floor in Melbourne — and our team will pull swatches for you to borrow."
-          align="end"
+          left={{
+            kicker: "The Walnur look",
+            title: "Natural textures, relaxed rooms",
+            body: "Oak, wool, jute and linen — pieces designed for the way Australians actually live, and styled here in a Federation cottage in Northcote.",
+            cta: bandCollection
+              ? { label: "Shop the look", href: collectionHref(bandCollection.handle) }
+              : undefined,
+          }}
+          right={{
+            kicker: "Visit us",
+            title: "See it, sit in it, take a sample home",
+            body: "Every fabric and finish is on the floor in Melbourne — and our team will pull swatches for you to borrow.",
+            cta: visitCollection
+              ? { label: "Browse the range", href: collectionHref(visitCollection.handle) }
+              : undefined,
+          }}
         />
       </div>
 
