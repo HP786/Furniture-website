@@ -30,16 +30,22 @@ export function CollectionTile({
       <div className="tile-ground absolute inset-0">
         {collection.image ? (
           <div className="washed h-full w-full motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out motion-safe:group-hover:scale-105">
+            {/* Full frame rather than a square CDN crop. These tiles run from
+                near-square to very wide, and a square crop threw away the sides
+                of the photograph before `object-cover` cropped it again — every
+                wide tile ended up a close-up. Asking for width alone leaves all
+                the framing to `object-cover`, held slightly above centre so the
+                subject is not cut off at the foot of the tile. */}
             <img
-              src={shopifyImageUrl(collection.image.url, { width: 900, height: 900, crop: "center" })}
-              srcSet={srcSetFor(collection.image.url, { width: 900, height: 900, crop: "center" })}
+              src={shopifyImageUrl(collection.image.url, { width: 1400 })}
+              srcSet={srcSetFor(collection.image.url, { width: 1400 })}
               sizes={sizes}
               alt={collection.image.altText ?? collection.title}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover object-[50%_45%]"
               loading={priority ? "eager" : "lazy"}
               fetchPriority={priority ? "high" : "auto"}
-              width={900}
-              height={900}
+              width={1400}
+              height={933}
             />
           </div>
         ) : null}
@@ -71,29 +77,41 @@ export function CollectionTile({
 }
 
 /**
- * The circular "Popular categories" chip — image in a circle, label beneath.
+ * The circular category chip — image in a circle, label beneath. `tone` picks
+ * the label colours: the row sits on the dark band on the home page and on the
+ * warm paper elsewhere.
  */
-export function CategoryChip({ collection }: { collection: CollectionRef }) {
+export function CategoryChip({
+  collection,
+  tone = "light",
+}: {
+  collection: CollectionRef;
+  tone?: "light" | "dark";
+}) {
   return (
     <Link
       href={collectionHref(collection.handle)}
-      className="group hover:text-walnut-700 text-on-surface focus-visible:outline-accent flex flex-col items-center gap-3 no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 motion-safe:transition-colors"
+      className={`group focus-visible:outline-accent flex flex-col items-center gap-3 no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 motion-safe:transition-colors ${
+        tone === "dark"
+          ? "hover:text-walnut-300 text-[#f6efe6]"
+          : "hover:text-walnut-700 text-on-surface"
+      }`}
     >
       <div className="washed bg-surface-secondary relative aspect-square w-full overflow-hidden rounded-full motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:-translate-y-1">
         {collection.image ? (
           <img
-            src={shopifyImageUrl(collection.image.url, { width: 400, height: 400, crop: "center" })}
-            srcSet={srcSetFor(collection.image.url, { width: 400, height: 400, crop: "center" })}
-            sizes="(min-width: 1024px) 12vw, 30vw"
+            src={shopifyImageUrl(collection.image.url, { width: 600, height: 600, crop: "center" })}
+            srcSet={srcSetFor(collection.image.url, { width: 600, height: 600, crop: "center" })}
+            sizes="(min-width: 640px) 260px, 30vw"
             alt=""
             className="h-full w-full scale-110 object-cover motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-125"
             loading="lazy"
-            width={400}
-            height={400}
+            width={600}
+            height={600}
           />
         ) : null}
       </div>
-      <span className="text-center text-[12px] tracking-[0.1em] uppercase">{collection.title}</span>
+      <span className="text-center text-[12.5px] tracking-[0.1em] uppercase">{collection.title}</span>
     </Link>
   );
 }

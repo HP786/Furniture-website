@@ -193,7 +193,9 @@ function CollectionContent({ data, chips }: { data: CollectionPageData; chips: C
                 <ul
                   id="product-grid"
                   role="list"
-                  className="grid grid-cols-2 gap-x-5.5 gap-y-6.5 lg:grid-cols-3"
+                  // A fourth column past 1440px — the measure widens there, and
+                  // three cards across a 1440p laptop are oversized.
+                  className="grid grid-cols-2 gap-x-5.5 gap-y-6.5 lg:grid-cols-3 min-[90rem]:grid-cols-4"
                   data-testid="product-grid"
                 >
                   {items.map((product, index) => (

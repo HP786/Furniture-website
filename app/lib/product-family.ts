@@ -70,6 +70,22 @@ export function familyKey(title: string) {
   return normalize(working) || normalize(title);
 }
 
+/**
+ * A looser key than `familyKey`, for runs of cards that should read as variety.
+ *
+ * A piece's given name is the first word of its title, and it is reused across
+ * every listing of that piece — so "Leo Tall Plinth Light Oak" and "Leo Short
+ * Plinth Smoke Oak" count as the same piece here, where `familyKey` keeps them
+ * apart (they are separate products with separate swatch rows). The category
+ * tag joins the key so two unrelated pieces sharing a name would not collide.
+ */
+export function pieceKey(title: string, tags: readonly string[]) {
+  const normalized = normalize(title);
+  const name = normalized.split(/\s+/)[0] || normalized;
+  const category = tags.find((tag) => /^category_/i.test(tag))?.toLowerCase() ?? "";
+  return `${name}|${category}`;
+}
+
 export type FamilyMember = {
   handle: string;
   title: string;

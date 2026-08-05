@@ -1,6 +1,7 @@
 import { gql, type StorefrontApi } from "@shopify/hydrogen";
 
 import type { CollectionRef } from "./navigation";
+import { ROOM_IMAGE_OVERRIDES } from "./rooms";
 import { getStorefrontClient } from "./storefront";
 
 /** One round trip shared by the chrome and the home page's tiles. */
@@ -32,10 +33,14 @@ export async function loadCollectionIndex(): Promise<CollectionIndex> {
   const { data } = await storefront.graphql(COLLECTION_INDEX_QUERY);
   const result = data as CollectionIndexQuery | null | undefined;
 
+  // The override wins where one exists, so every tile, nav panel and Instagram
+  // card drawn from this index picks up the supplied room photograph.
   const all: CollectionRef[] = (result?.collections.nodes ?? []).map((node) => ({
     handle: node.handle,
     title: node.title,
-    image: node.image ? { url: node.image.url, altText: node.image.altText ?? null } : null,
+    image:
+      ROOM_IMAGE_OVERRIDES[node.handle] ??
+      (node.image ? { url: node.image.url, altText: node.image.altText ?? null } : null),
   }));
 
   return {

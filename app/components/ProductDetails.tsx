@@ -9,11 +9,13 @@ import { useMemo, useState } from "react";
 import { openCartDrawer } from "../lib/cart-drawer";
 import { shopifyImageUrl, srcSetFor } from "../lib/image";
 import { formatPercentOff, formatPrice } from "../lib/money";
+import { roomFromTags } from "../lib/rooms";
 import { subtitleFromTags, swatchFromTags } from "../lib/swatches";
 import { useColourways } from "./FamilyProvider";
 import type { PRODUCT_QUERY } from "../products/[handle]/page";
 import { ProductViewedTracker } from "./AnalyticsTrackers";
 import { ProductCard } from "./ProductCard";
+import { RoomTagLink } from "./RoomTag";
 
 type ProductQuery = StorefrontApi.ResultOf<typeof PRODUCT_QUERY>;
 type ProductData = NonNullable<ProductQuery["product"]>;
@@ -492,13 +494,17 @@ function ProductInfo({ product }: { product: ProductData }) {
   const tags = product.tags ?? [];
   const swatch = swatchFromTags(tags);
   const subtitle = subtitleFromTags(tags);
+  const room = roomFromTags(tags);
   const colourways = useColourways(product.title);
 
   return (
     <div className="flex flex-col gap-0 md:sticky md:top-38 md:self-start">
       <ProductViewedTracker product={product} selectedVariant={selectedVariant} />
       <div className="pt-4 md:pt-0">
-        <p className="type-overline text-walnut-700 mb-3">The Quiet Rooms</p>
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <p className="type-overline text-walnut-700 m-0">The Quiet Rooms</p>
+          {room ? <RoomTagLink room={room} /> : null}
+        </div>
         <h1 className="font-heading text-[32px] leading-[1.06] font-light tracking-[-0.025em] text-pretty md:text-[46px]">
           {product.title}
         </h1>

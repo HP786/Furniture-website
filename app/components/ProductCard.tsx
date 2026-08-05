@@ -6,8 +6,10 @@ import { useState } from "react";
 import { shopifyImageUrl, srcSetFor } from "../lib/image";
 import { formatPrice } from "../lib/money";
 import type { ProductCardData } from "../lib/product-card-fragment";
+import { roomFromTags } from "../lib/rooms";
 import { subtitleFromTags, swatchFromTags } from "../lib/swatches";
 import { useColourways } from "./FamilyProvider";
+import { RoomTag } from "./RoomTag";
 import { SaveButton } from "./SaveButton";
 
 function moneyGreater(a: { amount: string } | null | undefined, b: { amount: string }) {
@@ -45,6 +47,7 @@ export function ProductCard({
   const tags = product.tags ?? [];
   const swatch = swatchFromTags(tags);
   const subtitle = subtitleFromTags(tags);
+  const room = roomFromTags(tags);
 
   return (
     <article
@@ -90,15 +93,20 @@ export function ProductCard({
           <SaveButton handle={product.handle} title={product.title} />
         </div>
 
-        {soldOut ? (
-          <span className="badge-soldout absolute start-3.5 top-3.5 inline-flex items-center rounded-[7px] text-[10.5px] tracking-[0.12em] uppercase">
-            Sold out
-          </span>
-        ) : onSale ? (
-          <span className="text-walnut-800 absolute start-3.5 top-3.5 inline-flex items-center rounded-[7px] bg-[color:rgb(253_251_248/0.9)] px-3 py-1.5 text-[10.5px] tracking-[0.12em] uppercase">
-            Sale
-          </span>
-        ) : null}
+        {/* Status first, then the room the piece is for — stacked so the two
+            never sit on top of each other. */}
+        <div className="absolute start-3.5 top-3.5 flex flex-col items-start gap-1.5">
+          {soldOut ? (
+            <span className="badge-soldout inline-flex items-center rounded-[7px] text-[10.5px] tracking-[0.12em] uppercase">
+              Sold out
+            </span>
+          ) : onSale ? (
+            <span className="text-walnut-800 inline-flex items-center rounded-[7px] bg-[color:rgb(253_251_248/0.9)] px-3 py-1.5 text-[10.5px] tracking-[0.12em] uppercase">
+              Sale
+            </span>
+          ) : null}
+          {room ? <RoomTag room={room} /> : null}
+        </div>
 
         {/* Quick view. The card itself is a link overlay (.card-link), so this
             sits above it and points at the same product — a keyboard user

@@ -152,7 +152,7 @@ function SearchContent({ data }: { data: SearchPageData }) {
                   <ul
                     id="product-grid"
                     role="list"
-                    className="grid grid-cols-2 gap-x-1 gap-y-10 lg:grid-cols-3"
+                    className="grid grid-cols-2 gap-x-1 gap-y-10 lg:grid-cols-3 min-[90rem]:grid-cols-4"
                     data-testid="product-grid"
                   >
                     {items.map((product, index) => (

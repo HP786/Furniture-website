@@ -25,6 +25,16 @@
   }
 }
 
+/* The measure. The core ships a fixed 1440px page, which on a 1440p laptop
+   leaves several hundred pixels of empty gutter down each side. Past 1440px the
+   page grows with the viewport instead, so the grid keeps reaching for the
+   edges. `max()` means nothing changes at or below 1440px. */
+@media (min-width: 90rem) {
+  :root {
+    --spacing-page: max(1440px, 86vw);
+  }
+}
+
 html {
   scroll-padding-top: var(--chrome-top);
 }

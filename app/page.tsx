@@ -17,7 +17,6 @@ import {
   BRAND_NAME,
   CATEGORY_HANDLES,
   collectionHref,
-  CURATED_HANDLES,
   EDITORIAL_IMAGES,
   INSTAGRAM_POSTS,
   MARQUEE_PHRASES,
@@ -26,13 +25,70 @@ import {
   TRUST_POINTS,
   type CollectionRef,
 } from "./lib/navigation";
+import { pieceKey } from "./lib/product-family";
+import { ROOMS, type Room } from "./lib/rooms";
+import { swatchBrightness, typeFromTags } from "./lib/swatches";
 
 type EditorialImage = { url: string; altText: string };
 
+/** How many cards the trending rail ends up carrying. */
+const TRENDING_COUNT = 18;
+
+/** How many cards the new-arrivals rail carries. */
+const NEW_ARRIVAL_COUNT = 12;
+
+/** Below this perceived brightness a finish counts as deep — smoke oak, walnut,
+ *  tan, clay and sangria clear it; oak, pine and the pale bouclés do not. */
+const DARK_FINISH = 0.72;
+
+/**
+ * Trending is read a room at a time rather than as one best-selling run, so the
+ * rail carries every space rather than whichever one outsells the others — the
+ * badge on each card says which. One aliased field per room in `ROOMS`, written
+ * out because the query is typed from the document itself.
+ *
+ * Each room is over-fetched: most of what comes back is the same few pieces in
+ * different finishes, and only one listing of each piece makes the rail.
+ */
 export const HOME_QUERY = gql(
   `
     query Home {
-      products(first: 12, sortKey: BEST_SELLING) {
+      livingRoom: collection(handle: "living-room-1") {
+        products(first: 40, sortKey: BEST_SELLING) {
+          nodes {
+            ...ProductCard
+          }
+        }
+      }
+      diningRoom: collection(handle: "dining-room-1") {
+        products(first: 40, sortKey: BEST_SELLING) {
+          nodes {
+            ...ProductCard
+          }
+        }
+      }
+      bedroom: collection(handle: "bedroom-1") {
+        products(first: 40, sortKey: BEST_SELLING) {
+          nodes {
+            ...ProductCard
+          }
+        }
+      }
+      outdoor: collection(handle: "outdoor") {
+        products(first: 40, sortKey: BEST_SELLING) {
+          nodes {
+            ...ProductCard
+          }
+        }
+      }
+      bathroom: collection(handle: "bathroom") {
+        products(first: 40, sortKey: BEST_SELLING) {
+          nodes {
+            ...ProductCard
+          }
+        }
+      }
+      newArrivals: products(first: 40, sortKey: CREATED_AT, reverse: true) {
         nodes {
           ...ProductCard
         }
@@ -44,6 +100,99 @@ export const HOME_QUERY = gql(
 
 type HomeQuery = StorefrontApi.ResultOf<typeof HOME_QUERY>;
 
+/** A room and the pieces it contributes to the trending rail. */
+type RoomGroup = { room: Room; products: ProductCardData[] };
+
+/**
+ * Round-robin: the first of every list, then the second, and so on, stopping at
+ * `limit`. Lists that run out early drop away and the rest keep dealing.
+ */
+function deal(lists: ProductCardData[][], limit: number) {
+  const dealt: ProductCardData[] = [];
+  const depth = Math.max(0, ...lists.map((list) => list.length));
+  for (let slot = 0; slot < depth && dealt.length < limit; slot += 1) {
+    for (const list of lists) {
+      if (dealt.length >= limit) break;
+      const product = list[slot];
+      if (product) dealt.push(product);
+    }
+  }
+  return dealt;
+}
+
+/** How many each list contributes: one apiece per round, so a short list is
+ *  never squeezed out by a long one. */
+function quotas(lists: ProductCardData[][], limit: number) {
+  const taken = lists.map(() => 0);
+  const available = lists.reduce((sum, list) => sum + list.length, 0);
+  let remaining = Math.min(limit, available);
+
+  while (remaining > 0) {
+    for (let index = 0; index < lists.length && remaining > 0; index += 1) {
+      if (taken[index] >= lists[index].length) continue;
+      taken[index] += 1;
+      remaining -= 1;
+    }
+  }
+  return taken;
+}
+
+/**
+ * Merge the rooms so the scarce ones are spaced along the rail rather than used
+ * up in the opening cards — dealing them in turn would put the store's one
+ * dining piece third and leave a long tail of nothing but the living room.
+ *
+ * Each room's picks are laid on a 0–1 track at even intervals and the tracks
+ * are merged, so a room contributing three pieces surfaces about every third of
+ * the way along however many the others contribute.
+ */
+function weave(lists: ProductCardData[][], limit: number) {
+  const taken = quotas(lists, limit);
+
+  const placed = lists.flatMap((list, listIndex) =>
+    list.slice(0, taken[listIndex]).map((product, index) => ({
+      product,
+      listIndex,
+      at: (index + 0.5) / taken[listIndex],
+    })),
+  );
+  placed.sort((a, b) => a.at - b.at || a.listIndex - b.listIndex);
+
+  return placed.map((entry) => entry.product);
+}
+
+/** At or below this many products, a room shows everything it has. */
+const SMALL_ROOM = 6;
+
+/**
+ * One listing per piece, ordered so consecutive cards are different kinds of
+ * thing — otherwise best-selling order hands back every colourway of one side
+ * table, then every colourway of the next. `seen` is shared across rooms so a
+ * piece listed in two of them is still only offered once.
+ *
+ * A room with only a handful of products skips the collapsing: there, the
+ * different sizes and finishes are all the room has, and folding them together
+ * would leave it with one card.
+ */
+function variedOrder(products: ProductCardData[], seen: Set<string>) {
+  const byType = new Map<string, ProductCardData[]>();
+  const collapse = products.length > SMALL_ROOM;
+
+  for (const product of products) {
+    const tags = product.tags ?? [];
+    const key = collapse ? pieceKey(product.title, tags) : product.id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const type = typeFromTags(tags) ?? "other";
+    const bucket = byType.get(type);
+    if (bucket) bucket.push(product);
+    else byType.set(type, [product]);
+  }
+
+  return deal([...byType.values()], Number.POSITIVE_INFINITY);
+}
+
 /** Column spans for the five-room mosaic, matching the design's rhythm. */
 const ROOM_SPANS = [
   "lg:col-span-5",
@@ -51,39 +200,6 @@ const ROOM_SPANS = [
   "lg:col-span-3",
   "lg:col-span-6",
   "lg:col-span-6",
-];
-
-/**
- * Layout for the six curated tiles in the dark band. The design interleaves a
- * copy block into the mosaic, so spans, heights and order are explicit per
- * position. Height classes are written out in full — Tailwind only sees class
- * names it can read literally in the source, so an interpolated `md:${...}`
- * would never be generated.
- */
-/**
- * The same six tiles on a phone. Two feature rows carry a full-width tile, the
- * rest pair up — enough variation that the band reads as an edit rather than a
- * checkerboard. Heights are sized so the whole band, heading included, lands
- * inside one screen on a large phone. Height and span classes are literal for
- * the same reason as below: Tailwind only generates class names it can read in
- * the source.
- */
-const MOBILE_CURATED_LAYOUT = [
-  { span: "col-span-2", height: "h-[190px]", wide: true },
-  { span: "col-span-1", height: "h-[135px]", wide: false },
-  { span: "col-span-1", height: "h-[135px]", wide: false },
-  { span: "col-span-2", height: "h-[155px]", wide: true },
-  { span: "col-span-1", height: "h-[135px]", wide: false },
-  { span: "col-span-1", height: "h-[135px]", wide: false },
-];
-
-const CURATED_LAYOUT = [
-  { span: "lg:col-span-7", height: "h-[260px] md:h-[430px]", order: "lg:order-1" },
-  { span: "lg:col-span-5", height: "h-[260px] md:h-[430px]", order: "lg:order-2" },
-  { span: "lg:col-span-4", height: "h-[260px] md:h-[300px]", order: "lg:order-4" },
-  { span: "lg:col-span-4", height: "h-[260px] md:h-[300px]", order: "lg:order-5" },
-  { span: "lg:col-span-7", height: "h-[260px] md:h-[360px]", order: "lg:order-6" },
-  { span: "lg:col-span-5", height: "h-[260px] md:h-[360px]", order: "lg:order-7" },
 ];
 
 async function loadHomePage() {
@@ -94,10 +210,46 @@ async function loadHomePage() {
   const { data } = await storefront.graphql(HOME_QUERY);
   const home = data as HomeQuery | null | undefined;
 
-  return {
-    products: (home?.products.nodes ?? []) as ProductCardData[],
-    index: collectionIndex,
-  };
+  // Paired by hand rather than by index: the aliases are spelled out in the
+  // query, so this is the one place the two lists have to agree. A room with
+  // nothing in it yet is dropped, so the block never shows an empty row.
+  const roomGroups: RoomGroup[] = [
+    { slug: "livingroom", nodes: home?.livingRoom?.products.nodes },
+    { slug: "diningroom", nodes: home?.diningRoom?.products.nodes },
+    { slug: "bedroom", nodes: home?.bedroom?.products.nodes },
+    { slug: "outdoor", nodes: home?.outdoor?.products.nodes },
+    { slug: "bathroom", nodes: home?.bathroom?.products.nodes },
+  ].flatMap(({ slug, nodes }) => {
+    const room = ROOMS.find((candidate) => candidate.slug === slug);
+    const products = (nodes ?? []) as ProductCardData[];
+    if (!room || products.length === 0) return [];
+    return [{ room, products }];
+  });
+
+  // Woven rather than concatenated, so the badges keep changing the whole way
+  // along the rail instead of the smaller rooms being spent in the first cards.
+  const seen = new Set<string>();
+  const trending = weave(
+    roomGroups.map((group) => variedOrder(group.products, seen)),
+    TRENDING_COUNT,
+  );
+
+  // Newest listed first, with the same collapsing so the rail is not four Cove
+  // side tables in four finishes. Deep finishes lead: the rail sits on the brown
+  // ground, where a chalk bouclé on a paper-white product shot washes out.
+  // Paler pieces top the rail up if the dark ones do not fill it.
+  const arrivals = (home?.newArrivals.nodes ?? []) as ProductCardData[];
+  const darkest = [...arrivals].sort(
+    (a, b) => (swatchBrightness(a.tags ?? []) ?? 1) - (swatchBrightness(b.tags ?? []) ?? 1),
+  );
+  const finishSeen = new Set<string>();
+  const deep = darkest.filter((product) => (swatchBrightness(product.tags ?? []) ?? 1) < DARK_FINISH);
+  const newArrivals = [
+    ...variedOrder(deep, finishSeen),
+    ...variedOrder(darkest, finishSeen),
+  ].slice(0, NEW_ARRIVAL_COUNT);
+
+  return { trending, newArrivals, index: collectionIndex };
 }
 
 function Hero({ collection, image }: { collection: CollectionRef | undefined; image: EditorialImage }) {
@@ -187,40 +339,124 @@ function BandCopyBlock({ copy }: { copy: BandCopy }) {
 }
 
 /**
- * One photograph carrying one message, set against the left edge. The scrim is
- * weighted the same way, so the copy clears AA over whatever the photo is doing
- * behind it.
+ * A photograph across the full width carrying one message, set against the left
+ * edge. It runs between two brown sections as a break, so the scrim is weighted
+ * the same way the bands are and the copy still clears AA over the picture.
  */
 function MessageBand({ image, copy }: { image: EditorialImage; copy: BandCopy }) {
   return (
     <section data-reveal className="relative overflow-hidden" aria-label={copy.title}>
       <div className="tile-ground absolute inset-0">
         <img
-          src={shopifyImageUrl(image.url, { width: 2400, height: 1200, crop: "center" })}
-          srcSet={srcSetFor(image.url, { width: 2400, height: 1200, crop: "center" })}
+          src={shopifyImageUrl(image.url, { width: 2400 })}
+          srcSet={srcSetFor(image.url, { width: 2400 })}
           sizes="100vw"
           alt=""
-          className="washed h-full w-full object-cover"
+          className="washed h-full w-full object-cover object-[50%_55%]"
           loading="lazy"
           width={2400}
-          height={1200}
+          height={1500}
         />
       </div>
       <div className="scrim-band pointer-events-none absolute inset-0" />
 
-      <div className="max-w-page px-margin relative mx-auto py-16 md:py-28">
+      <div className="max-w-page px-margin relative mx-auto py-20 md:py-32">
         <BandCopyBlock copy={copy} />
       </div>
     </section>
   );
 }
 
+/**
+ * One photograph beside one message, both given half the measure. Copy sits on
+ * the page's own surface rather than over the picture, so the type can be as
+ * large as the photograph without fighting it for contrast.
+ */
+function SplitFeature({
+  image,
+  copy,
+  imageFirst = false,
+  tone = "light",
+  objectPosition = "object-[50%_45%]",
+}: {
+  image: EditorialImage;
+  copy: BandCopy;
+  /** Puts the photograph on the left. Off by default, so the eye meets the
+   *  words first and the two features on the page do not mirror each other. */
+  imageFirst?: boolean;
+  /** `dark` gives the whole band the brown ground and light type. */
+  tone?: "light" | "dark";
+  /** Where a tall photograph is held as the box crops it. Written as a whole
+   *  class at the call site — Tailwind only generates what it can read. */
+  objectPosition?: string;
+}) {
+  const dark = tone === "dark";
+
+  return (
+    <section data-reveal aria-label={copy.title} className={dark ? "bg-walnut-900" : ""}>
+      <div
+        className={`max-w-page px-margin mx-auto grid items-center gap-9 md:grid-cols-2 md:gap-14 lg:gap-20 ${
+          dark ? "py-14 md:py-24" : ""
+        }`}
+      >
+        <div
+          className={`tile-ground relative h-[360px] overflow-hidden rounded-lg md:h-[640px] min-[90rem]:h-[720px] ${
+            imageFirst ? "" : "md:order-2"
+          }`}
+        >
+          <img
+            src={shopifyImageUrl(image.url, { width: 1600 })}
+            srcSet={srcSetFor(image.url, { width: 1600 })}
+            sizes="(min-width: 768px) 50vw, 100vw"
+            alt={image.altText}
+            className={`washed h-full w-full object-cover ${objectPosition}`}
+            loading="lazy"
+            width={1600}
+            height={1066}
+          />
+        </div>
+
+        <div className="max-w-[540px]">
+          <p className={`type-overline mb-4 ${dark ? "text-[#e2d2bc]" : "text-walnut-700"}`}>
+            {copy.kicker}
+          </p>
+          <h2
+            className={`font-heading mb-4 text-[30px] leading-[1.04] font-light tracking-[-0.025em] text-pretty md:mb-5 md:text-[48px] ${
+              dark ? "text-[#f6efe6]" : ""
+            }`}
+          >
+            {copy.title}
+          </h2>
+          <p
+            className={`text-[15px] leading-relaxed md:text-[17.5px] ${
+              dark ? "text-[#f6efe6]/75" : "text-sand-700"
+            }`}
+          >
+            {copy.body}
+          </p>
+          {copy.cta ? (
+            <Link
+              href={copy.cta.href}
+              className={`focus-visible:outline-accent mt-8 inline-flex items-center justify-center rounded-[7px] px-8 py-4 text-[14.5px] no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors ${
+                dark
+                  ? "text-sand-900 bg-[#fdfbf8] hover:bg-white"
+                  : "button-primary"
+              }`}
+            >
+              {copy.cta.label}
+            </Link>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default async function HomePage() {
-  const { products, index } = await loadHomePage();
+  const { trending, newArrivals, index } = await loadHomePage();
   const { byHandle } = index;
 
   const rooms = pickCollections(byHandle, ROOM_HANDLES);
-  const curated = pickCollections(byHandle, CURATED_HANDLES);
   const categories = pickCollections(byHandle, CATEGORY_HANDLES);
   const heroCollection = byHandle.get("long-afternoons") ?? byHandle.get("shop-all");
   const bandCollection = byHandle.get("warm-timber") ?? heroCollection;
@@ -239,9 +475,9 @@ export default async function HomePage() {
     ];
   });
 
-  // The three browse sections, now panels of one tabbed block. Each is dropped
-  // if it has nothing to show, so an empty tab is never offered. Order matters:
-  // the first entry is the tab that opens by default.
+  // The two browse sections, panels of one tabbed block. Each is dropped if it
+  // has nothing to show, so an empty tab is never offered. Order matters: the
+  // first entry is the tab that opens by default.
   const browseTabs: HomeTab[] = [];
 
   if (rooms.length > 0) {
@@ -286,7 +522,7 @@ export default async function HomePage() {
                 <li key={room.handle} className={ROOM_SPANS[roomIndex] ?? "lg:col-span-4"}>
                   <CollectionTile
                     collection={room}
-                    heightClass="h-[320px] md:h-[460px]"
+                    heightClass="h-[320px] md:h-[460px] min-[90rem]:h-[560px]"
                     sizes="(min-width: 1024px) 40vw, (min-width: 640px) 50vw, 100vw"
                   />
                 </li>
@@ -307,47 +543,16 @@ export default async function HomePage() {
     });
   }
 
-  if (categories.length > 0) {
-    browseTabs.push({
-      id: "categories",
-      label: "Popular",
-      heading: "Popular categories",
-      panel: (
-        <div className="max-w-page px-margin mx-auto">
-          <ul
-            role="list"
-            className="grid grid-cols-3 gap-x-6 gap-y-8 md:grid-cols-5 lg:gap-x-6 lg:gap-y-8"
-          >
-            {categories.map((category) => (
-              <li key={`cat-${category.handle}`}>
-                <CategoryChip collection={category} />
-              </li>
-            ))}
-          </ul>
-          <div className="mt-9 flex justify-center">
-            <Link
-              href="/collections"
-              className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              View all categories
-              <Arrow size={16} />
-            </Link>
-          </div>
-        </div>
-      ),
-    });
-  }
-
-  if (products.length > 0) {
+  if (trending.length > 0) {
     // Mobile shows four at a time, so chunk the run into pages of four.
     const productPages: ProductCardData[][] = [];
-    for (let index = 0; index < products.length; index += 4) {
-      productPages.push(products.slice(index, index + 4));
+    for (let index = 0; index < trending.length; index += 4) {
+      productPages.push(trending.slice(index, index + 4));
     }
 
     browseTabs.push({
       id: "trending",
-      label: "Trending",
+      label: "Trending pieces",
       heading: "Trending pieces",
       panel: (
         <>
@@ -381,18 +586,24 @@ export default async function HomePage() {
           </div>
 
           <div className="hidden md:block">
-            <ProductRail
-              title="Trending pieces"
-              headingHidden
-              viewAllHref={collectionHref("shop-all")}
-              viewAllLabel="View all"
-            >
-              {products.map((product, productIndex) => (
+            {/* No "view all" beside the arrows — it crowded them. The link
+                sits under the rail instead. */}
+            <ProductRail title="Trending pieces" headingHidden>
+              {trending.map((product, productIndex) => (
                 <li key={product.id} className="w-[308px] shrink-0">
                   <ProductCard product={product} priority={productIndex < 2} sizes="308px" />
                 </li>
               ))}
             </ProductRail>
+            <div className="mt-9 flex justify-center">
+              <Link
+                href={collectionHref("shop-all")}
+                className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                View all pieces
+                <Arrow size={16} />
+              </Link>
+            </div>
           </div>
         </>
       ),
@@ -459,9 +670,10 @@ export default async function HomePage() {
           reachable without scrolling past it. */}
       {browseTabs.length > 0 ? <HomeTabs tabs={browseTabs} /> : null}
 
-      <div className="mt-20 md:mt-25">
-        <MessageBand
+      <div className="mt-20 md:mt-28">
+        <SplitFeature
           image={EDITORIAL_IMAGES.bandLook}
+          objectPosition="object-[50%_62%]"
           copy={{
             kicker: "The Walnur look",
             title: "Natural textures, relaxed rooms",
@@ -473,77 +685,119 @@ export default async function HomePage() {
         />
       </div>
 
-      {/* Shop by collection — dark band */}
-      {curated.length > 0 ? (
-        <section className="bg-walnut-900" aria-labelledby="collections-heading">
+      {/* New arrivals — newest listed first, on the brown ground so it breaks
+          up the two light sections either side of it.
+
+          The cards carry no tone of their own: they set their type with
+          `text-on-surface` / `text-sand-600`, which read the tokens. Rebinding
+          those two on the section flips every card to light type without a
+          second styling path through ProductCard. */}
+      {newArrivals.length > 0 ? (
+        <section
+          data-reveal
+          className="bg-walnut-900 mt-20 py-16 [--color-on-surface:#f6efe6] [--color-sand-600:#c3b6a4] md:mt-28 md:py-24"
+          aria-label="New arrivals"
+        >
+          <ProductRail title="New arrivals" tone="dark">
+            {newArrivals.map((product, productIndex) => (
+              <li key={product.id} className="w-[62vw] shrink-0 sm:w-[308px]">
+                <ProductCard
+                  product={product}
+                  priority={productIndex < 2}
+                  sizes="(min-width: 640px) 308px, 62vw"
+                />
+              </li>
+            ))}
+          </ProductRail>
+          <div className="mt-9 flex justify-center">
+            <Link
+              href={collectionHref("shop-all")}
+              className="text-walnut-300 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              View all pieces
+              <Arrow size={16} />
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
+      {/* A photograph between the two brown sections, so the run of them does
+          not read as one long band. */}
+      <MessageBand
+        image={EDITORIAL_IMAGES.editorialColour}
+        copy={{
+          kicker: "Winter 26 · The palette",
+          title: "Terracotta, chalk and clay",
+          body: "The season's colours, worked into wool rugs, bouclé and cast stone — warm enough to carry a room through a Melbourne winter.",
+          cta: { label: "Shop the palette", href: collectionHref("pale-and-quiet") },
+        }}
+      />
+
+      {/* Shop by category — the chip row that used to be a browse tab, moved
+          onto the brown ground the collection mosaic used to hold. */}
+      {categories.length > 0 ? (
+        <section className="bg-walnut-900" aria-labelledby="categories-heading">
           <div className="max-w-page px-margin mx-auto py-14 md:py-22">
             <div data-reveal>
               {/* Stacked on mobile — side by side the heading wraps and the link
                   gets squeezed against it. */}
-              <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6 md:mb-8">
-                <h2 id="collections-heading" className="type-display m-0 text-[#f6efe6]">
-                  Shop by collection
-                </h2>
+              <div className="mb-9 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-8 md:mb-12">
+                <div>
+                  <h2 id="categories-heading" className="type-display m-0 text-[#f6efe6]">
+                    Shop by category
+                  </h2>
+                  <p className="mt-3.5 max-w-[470px] text-[14.5px] leading-relaxed text-[#f6efe6]/65">
+                    We group pieces the way people actually shop — by the feeling of a room, the
+                    hand of a fabric, the grain of a timber. Start anywhere.
+                  </p>
+                </div>
                 <Link
                   href="/collections"
                   className="text-walnut-300 focus-visible:outline-accent inline-flex shrink-0 items-center gap-2 text-[13px] tracking-[0.1em] uppercase no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
-                  All collections
+                  All categories
                   <Arrow size={16} />
                 </Link>
               </div>
 
-              {/* Mobile: all six stay on screen — a carousel would hide most of
-                  them — but on a mosaic rhythm rather than a uniform grid. */}
-              <ul role="list" className="grid grid-cols-2 gap-x-3 gap-y-4 md:hidden">
-                {curated.map((collection, curatedIndex) => {
-                  const layout = MOBILE_CURATED_LAYOUT[curatedIndex] ?? MOBILE_CURATED_LAYOUT[1];
-                  return (
-                    <li key={`m-${collection.handle}`} className={layout.span}>
-                      <CollectionTile
-                        collection={collection}
-                        heightClass={layout.height}
-                        sizes={layout.wide ? "100vw" : "50vw"}
-                        compact={!layout.wide}
-                      />
-                    </li>
-                  );
-                })}
+              {/* Two rows of five from `sm` up, so the circles are large enough
+                  to read as photographs. Capped per chip — five across a 1440p
+                  measure would otherwise give circles the size of a room tile. */}
+              <ul
+                role="list"
+                className="grid grid-cols-3 gap-x-6 gap-y-9 sm:grid-cols-5 md:gap-x-9 md:gap-y-12"
+              >
+                {categories.map((category) => (
+                  <li key={`cat-${category.handle}`} className="mx-auto w-full max-w-[260px]">
+                    <CategoryChip collection={category} tone="dark" />
+                  </li>
+                ))}
               </ul>
 
-              <div className="hidden gap-5 md:grid md:grid-cols-2 lg:grid-cols-12">
-                <div className="flex flex-col justify-center pe-0 lg:order-3 lg:col-span-4 lg:pe-8">
-                  <p className="font-heading mb-3 text-[26px] leading-[1.1] font-light tracking-[-0.02em] text-[#f6efe6] text-pretty md:text-[30px]">
-                    Six ways into the range
-                  </p>
-                  <p className="mb-5 text-[14.5px] leading-relaxed text-[#f6efe6]/65">
-                    We group pieces the way people actually shop — by the feeling of a room, the hand
-                    of a fabric, the grain of a timber. Start anywhere.
-                  </p>
-                  <Link
-                    href={collectionHref("shop-all")}
-                    className="text-walnut-300 focus-visible:outline-accent inline-flex items-center gap-2 text-[12.5px] tracking-[0.1em] uppercase no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                  >
-                    Browse everything
-                    <Arrow size={15} />
-                  </Link>
+              {/* Photograph and copy, split. The message bands elsewhere set
+                  their type over a full-bleed photo; on the brown ground the
+                  picture is a tile beside the words instead. */}
+              <div className="mt-14 grid items-center gap-8 md:mt-20 md:grid-cols-2 md:gap-12 lg:gap-16">
+                <div className="tile-ground relative h-[240px] overflow-hidden rounded-lg md:h-[400px] min-[90rem]:h-[480px]">
+                  <img
+                    src={shopifyImageUrl(EDITORIAL_IMAGES.bandVisit.url, { width: 1400 })}
+                    srcSet={srcSetFor(EDITORIAL_IMAGES.bandVisit.url, { width: 1400 })}
+                    sizes="(min-width: 768px) 50vw, 100vw"
+                    alt={EDITORIAL_IMAGES.bandVisit.altText}
+                    className="washed h-full w-full object-cover object-[50%_45%]"
+                    loading="lazy"
+                    width={1400}
+                    height={933}
+                  />
                 </div>
-
-                {curated.map((collection, curatedIndex) => {
-                  const layout = CURATED_LAYOUT[curatedIndex] ?? CURATED_LAYOUT[2];
-                  return (
-                    <div
-                      key={collection.handle}
-                      className={`${layout.span} ${layout.order}`}
-                    >
-                      <CollectionTile
-                        collection={collection}
-                        heightClass={layout.height}
-                        sizes="(min-width: 1024px) 50vw, 100vw"
-                      />
-                    </div>
-                  );
-                })}
+                <BandCopyBlock
+                  copy={{
+                    kicker: "Visit the showroom",
+                    title: "Come and sit on it first",
+                    body: "Every piece we make is on the floor in Northcote, in every finish — feel the weave, open the drawers, and take a wallet of swatches home with you. Thursday to Sunday, ten till four.",
+                    cta: { label: "Browse the range", href: collectionHref("shop-all") },
+                  }}
+                />
               </div>
             </div>
           </div>

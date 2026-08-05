@@ -3,6 +3,8 @@
  * `buildNavigation` drops anything Shopify no longer has, so no nav link 404s.
  */
 
+import { ROOMS } from "./rooms";
+
 export type CollectionRef = {
   handle: string;
   title: string;
@@ -38,8 +40,11 @@ export const EDITORIAL_IMAGES = {
     altText: "A Federation cottage living room with a lit fireplace and woven armchairs",
   },
   bandLook: {
-    url: `${CDN}/walnut-band-terracotta.png?v=1785308672`,
-    altText: "A terracotta rug and oak table in a room with concrete floors",
+    // Served from `public/` rather than Shopify Files, so no CDN resizing —
+    // see ROOM_IMAGE_OVERRIDES for the same trade-off on the room tiles.
+    url: "/editorial/walnur-look.jpg",
+    altText:
+      "An oval oak dining table on a pedestal base, ringed by green bouclé chairs, looking out over paddocks",
   },
   bandVisit: {
     url: `${CDN}/walnut-showroom-rugs.png?v=1785308671`,
@@ -55,14 +60,12 @@ export const EDITORIAL_IMAGES = {
   },
 } as const;
 
-/** Room tiles on the home page, in the design's mosaic order. */
-export const ROOM_HANDLES = [
-  "living-room-1",
-  "dining-room-1",
-  "bedroom-1",
-  "outdoor",
-  "bathroom",
-] as const;
+/**
+ * Room tiles on the home page, in the design's mosaic order. Derived from the
+ * room model so the tiles, the badge on every card and the trending rows can
+ * never drift apart.
+ */
+export const ROOM_HANDLES = ROOMS.map((room) => room.handle);
 
 /** The six curated collections in the dark "Shop by collection" band. */
 export const CURATED_HANDLES = [

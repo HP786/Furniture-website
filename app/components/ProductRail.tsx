@@ -19,6 +19,7 @@ export function ProductRail({
   viewAllLabel = "View all",
   autoScroll = true,
   headingHidden = false,
+  tone = "light",
 }: {
   title: string;
   children: ReactNode;
@@ -28,7 +29,15 @@ export function ProductRail({
   /** Inside a tab panel the tab already names the rail, so the visible
    *  heading would repeat it. It stays in the accessibility tree either way. */
   headingHidden?: boolean;
+  /** `dark` is for a rail sitting on the brown ground: light heading, and
+   *  controls that invert on hover rather than filling with ink. */
+  tone?: "light" | "dark";
 }) {
+  const dark = tone === "dark";
+  const controlClass = dark
+    ? "border-[color:rgb(246_239_230/0.35)] text-[#f6efe6] hover:bg-[#f6efe6] hover:text-walnut-900 hover:border-[#f6efe6]"
+    : "border-border text-on-surface hover:bg-sand-900 hover:text-sand-100 hover:border-sand-900";
+
   const railRef = useRef<HTMLDivElement>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
@@ -121,7 +130,13 @@ export function ProductRail({
       <div
         className={`max-w-page px-margin mx-auto flex items-end gap-6 ${headingHidden ? "mb-4 justify-end" : "mb-8 justify-between"}`}
       >
-        <h2 className={headingHidden ? "sr-only" : "type-display m-0"}>{title}</h2>
+        <h2
+          className={
+            headingHidden ? "sr-only" : `type-display m-0 ${dark ? "text-[#f6efe6]" : ""}`
+          }
+        >
+          {title}
+        </h2>
         <div className="flex items-center gap-3">
           {viewAllHref ? (
             <a
@@ -141,7 +156,7 @@ export function ProductRail({
               }}
               disabled={atStart}
               aria-label="Scroll left"
-              className="border-border text-on-surface hover:bg-sand-900 hover:text-sand-100 hover:border-sand-900 focus-visible:outline-accent grid size-[46px] cursor-pointer place-items-center rounded-full border bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-current motion-safe:transition-colors"
+              className={`${controlClass} focus-visible:outline-accent grid size-[46px] cursor-pointer place-items-center rounded-full border bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-current motion-safe:transition-colors`}
             >
               <Arrow size={18} direction="left" />
             </button>
@@ -153,7 +168,7 @@ export function ProductRail({
               }}
               disabled={atEnd}
               aria-label="Scroll right"
-              className="border-border text-on-surface hover:bg-sand-900 hover:text-sand-100 hover:border-sand-900 focus-visible:outline-accent grid size-[46px] cursor-pointer place-items-center rounded-full border bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-current motion-safe:transition-colors"
+              className={`${controlClass} focus-visible:outline-accent grid size-[46px] cursor-pointer place-items-center rounded-full border bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-current motion-safe:transition-colors`}
             >
               <Arrow size={18} />
             </button>

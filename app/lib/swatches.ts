@@ -49,6 +49,27 @@ export function swatchFromTags(tags: readonly string[]): Swatch | null {
   return { name: titleCase(slug), hex };
 }
 
+/**
+ * Perceived brightness of the product's colourway, 0 (black) to 1 (white), or
+ * null where it carries no recognised colour tag. Weighted the usual way — the
+ * eye reads green as much brighter than blue at the same value.
+ */
+export function swatchBrightness(tags: readonly string[]): number | null {
+  const swatch = swatchFromTags(tags);
+  if (!swatch) return null;
+  const value = Number.parseInt(swatch.hex.slice(1), 16);
+  const red = (value >> 16) & 255;
+  const green = (value >> 8) & 255;
+  const blue = value & 255;
+  return (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+}
+
+/** What kind of piece this is — `Type_Coffee_Table` -> `coffee_table`. */
+export function typeFromTags(tags: readonly string[]): string | null {
+  const slug = readTag(tags, TYPE_TAG);
+  return slug ? slug.toLowerCase() : null;
+}
+
 /** The one-line descriptor under a card's title, e.g. "Bouclé, Armchair". */
 export function subtitleFromTags(tags: readonly string[]): string | null {
   const material = readTag(tags, MATERIAL_TAG);
