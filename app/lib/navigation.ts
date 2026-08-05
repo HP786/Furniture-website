@@ -88,20 +88,33 @@ export const CATEGORY_HANDLES = [
   "warm-timber",
 ] as const;
 
-/** The two magazine-style editorial cards below the marquee. */
-export const EDITORIAL_CARDS = [
+/** The social handle behind the Instagram panel and the footer's icon row. */
+export const INSTAGRAM_HANDLE = "@walnur";
+
+/**
+ * The Instagram grid on the home page. Each post links into the collection it
+ * was shot for, so the feed is shoppable. `image` overrides the collection's own
+ * photo where a dedicated shot reads better; otherwise the collection's is used.
+ */
+export const INSTAGRAM_POSTS = [
   {
-    handle: "warm-timber",
-    kicker: "A house we love",
-    title: "The Cottage at Red Hill",
-    body: "A weatherboard cottage furnished slowly — a cream three-seater, an oval oak table and a jute rug that has earned its marks.",
+    handle: "soft-texture",
+    caption: "Sample day on the showroom floor",
+    image: EDITORIAL_IMAGES.bandVisit,
+  },
+  {
+    handle: "lived-in-leather",
+    caption: "Four years into a tan leather armchair",
+    image: EDITORIAL_IMAGES.featureLeather,
   },
   {
     handle: "pale-and-quiet",
-    kicker: "Colour study",
-    title: "Terracotta, Chalk, Clay",
-    body: "How three warm tones behave in a room with concrete floors and a lot of afternoon light.",
+    caption: "Terracotta, chalk and clay, all in one room",
+    image: EDITORIAL_IMAGES.editorialColour,
   },
+  { handle: "bedroom-1", caption: "Slow mornings, oak and wool" },
+  { handle: "outdoor", caption: "Summer on a Northcote deck" },
+  { handle: "bathroom", caption: "Stone, timber and a lot of light" },
 ] as const;
 
 type GroupBlueprint = {

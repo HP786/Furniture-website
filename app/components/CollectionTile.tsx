@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { shopifyImageUrl, srcSetFor } from "../lib/image";
 import { collectionHref, type CollectionRef } from "../lib/navigation";
-import { Icon, ICON_PATHS } from "./WalnutMark";
 
 /**
  * Image tile for rooms and curated collections. Height comes in as a class so
@@ -14,12 +13,15 @@ export function CollectionTile({
   heightClass = "h-[300px]",
   priority = false,
   sizes = "(min-width: 1024px) 33vw, 100vw",
+  compact = false,
 }: {
   collection: CollectionRef;
   className?: string;
   heightClass?: string;
   priority?: boolean;
   sizes?: string;
+  /** Lighter label for narrow tiles, where the full heading fills the image. */
+  compact?: boolean;
 }) {
   return (
     <article
@@ -45,8 +47,16 @@ export function CollectionTile({
 
       <div className="scrim-tile pointer-events-none absolute inset-0 opacity-80 motion-safe:transition-opacity motion-safe:duration-500 group-hover:opacity-95" />
 
-      <div className="absolute inset-x-0 bottom-0 p-6 text-left motion-safe:translate-y-2 motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:translate-y-0">
-        <h3 className="type-heading-lg font-heading text-white">
+      <div
+        className={`absolute inset-x-0 bottom-0 text-left motion-safe:translate-y-2 motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:translate-y-0 ${
+          compact ? "p-4" : "p-6"
+        }`}
+      >
+        <h3
+          className={`font-heading text-white ${
+            compact ? "text-[17px] leading-[1.15] font-light tracking-[-0.02em]" : "type-heading-lg"
+          }`}
+        >
           <Link
             href={collectionHref(collection.handle)}
             className="card-link text-white"
@@ -55,12 +65,6 @@ export function CollectionTile({
             {collection.title}
           </Link>
         </h3>
-        <p
-          aria-hidden="true"
-          className="mt-1.5 flex items-center text-white/90 motion-safe:transition-opacity md:opacity-0 md:group-hover:opacity-100"
-        >
-          <Icon d={ICON_PATHS.arrowRight} size={15} />
-        </p>
       </div>
     </article>
   );

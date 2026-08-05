@@ -18,7 +18,9 @@ export function SwatchRequestForm() {
 
   return (
     <div className="relative">
-      <form onSubmit={onSubmit} className="flex gap-2.5">
+      {/* Stacked on a phone: side by side the field is too narrow to read the
+          address being typed into it. */}
+      <form onSubmit={onSubmit} className="flex flex-col gap-2.5 sm:flex-row">
         <label className="sr-only" htmlFor="swatch-email">
           Your email
         </label>
@@ -28,11 +30,13 @@ export function SwatchRequestForm() {
           type="email"
           required
           placeholder="Your email"
-          className="h-13 flex-1 rounded-[7px] border-transparent bg-white"
+          className="bg-surface h-13 flex-1 rounded-[7px] border-transparent text-[14.5px]"
         />
+        {/* Cream on the brown band — the brand-brown primary button would sink
+            into the surface behind it. */}
         <button
           type="submit"
-          className="button-primary focus-visible:outline-accent inline-flex shrink-0 cursor-pointer items-center justify-center rounded-[7px] px-7 py-4 text-[14.5px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-[background-color,transform] motion-safe:active:scale-[0.97]"
+          className="text-walnut-900 focus-visible:outline-accent inline-flex h-13 shrink-0 cursor-pointer items-center justify-center rounded-[7px] bg-[#f6efe6] px-7 text-[13px] tracking-[0.12em] uppercase hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-[background-color,transform] motion-safe:active:scale-[0.97]"
         >
           Send swatches
         </button>

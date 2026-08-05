@@ -152,33 +152,43 @@
   --aspect-landscape: 16/9;
 }
 
+/* The base scale is the phone scale — a step down across the board, so headings
+   and copy fit a narrow column without wrapping into towers. Every size steps
+   back up at md, where the desktop scale is the one below. */
 :root {
   --type-paragraph-lg-font: var(--font-body);
-  --type-paragraph-lg-size: 17px;
+  --type-paragraph-lg-size: 15.5px;
   --type-paragraph-font: var(--font-body);
-  --type-paragraph-size: 15px;
+  --type-paragraph-size: 14px;
   --type-paragraph-sm-font: var(--font-body);
-  --type-paragraph-sm-size: 13.5px;
+  --type-paragraph-sm-size: 12.5px;
   --type-heading-2xl-font: var(--font-heading);
-  --type-heading-2xl-size: 32px;
+  --type-heading-2xl-size: 27px;
   --type-heading-xl-font: var(--font-heading);
-  --type-heading-xl-size: 28px;
+  --type-heading-xl-size: 24px;
   --type-heading-lg-font: var(--font-heading);
-  --type-heading-lg-size: 24px;
+  --type-heading-lg-size: 20.5px;
   --type-heading-md-font: var(--font-heading);
-  --type-heading-md-size: 20px;
+  --type-heading-md-size: 17.5px;
   --type-heading-sm-font: var(--font-heading);
-  --type-heading-sm-size: 17px;
+  --type-heading-sm-size: 15.5px;
   --type-subheading-font: var(--font-body);
-  --type-subheading-size: 11px;
+  --type-subheading-size: 10.5px;
   /* 2.75 matches the 15–21px inline icons that dominate the chrome. */
   --icon-stroke-width: 2.75;
 }
 
 @media (min-width: 48rem) {
   :root {
+    --type-paragraph-lg-size: 17px;
+    --type-paragraph-size: 15px;
+    --type-paragraph-sm-size: 13.5px;
     --type-heading-2xl-size: 44px;
     --type-heading-xl-size: 32px;
+    --type-heading-lg-size: 24px;
+    --type-heading-md-size: 20px;
+    --type-heading-sm-size: 17px;
+    --type-subheading-size: 11px;
   }
 }
 

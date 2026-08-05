@@ -65,6 +65,27 @@ function useScrolledPast(enter: number, exit: number) {
   return { scrolled, armed };
 }
 
+// Publishes the docked header height as `--header-h`, so a full-height section
+// below it can size itself to what is actually left of the viewport. Only the
+// docked measurement counts: once the page scrolls the header shrinks, and
+// resizing the hero underneath it mid-scroll would jump the page.
+function useHeaderHeightVar(ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const apply = () => {
+      if (window.scrollY > 0) return;
+      document.documentElement.style.setProperty("--header-h", `${element.offsetHeight}px`);
+    };
+
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+}
+
 function MegaMenu({ group, onNavigate }: { group: NavGroup; onNavigate: () => void }) {
   return (
     <div
@@ -150,6 +171,9 @@ export function Header({
   const { scrolled, armed } = useScrolledPast(140, 90);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useHeaderHeightVar(headerRef);
 
   const cancelClose = useCallback(() => {
     if (closeTimer.current) {
@@ -188,6 +212,7 @@ export function Header({
 
   return (
     <header
+      ref={headerRef}
       // `w-full` keeps the header spanning the viewport — <body> is a column
       // flex container, where a bare `mx-auto` would shrink-to-fit instead.
       className="site-header bg-surface sticky top-0 z-40 mx-auto w-full border-b"

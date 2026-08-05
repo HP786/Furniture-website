@@ -3,13 +3,14 @@ import Link from "next/link";
 
 import { CategoryChip, CollectionTile } from "./components/CollectionTile";
 import { HomeTabs, type HomeTab } from "./components/HomeTabs";
+import { InstagramPanel, type InstagramPost } from "./components/InstagramPanel";
 import { MobileProductPager } from "./components/MobileProductPager";
 import { ProductCard } from "./components/ProductCard";
 import { PRODUCT_CARD_FRAGMENT, type ProductCardData } from "./lib/product-card-fragment";
 import { ProductRail } from "./components/ProductRail";
 import { Reveal } from "./components/Reveal";
 import { SwatchRequestForm } from "./components/SwatchRequestForm";
-import { Icon, ICON_PATHS } from "./components/WalnutMark";
+import { Arrow, Icon } from "./components/WalnutMark";
 import { loadCollectionIndex } from "./lib/collection-index";
 import { shopifyImageUrl, srcSetFor } from "./lib/image";
 import {
@@ -17,8 +18,8 @@ import {
   CATEGORY_HANDLES,
   collectionHref,
   CURATED_HANDLES,
-  EDITORIAL_CARDS,
   EDITORIAL_IMAGES,
+  INSTAGRAM_POSTS,
   MARQUEE_PHRASES,
   pickCollections,
   ROOM_HANDLES,
@@ -59,6 +60,23 @@ const ROOM_SPANS = [
  * names it can read literally in the source, so an interpolated `md:${...}`
  * would never be generated.
  */
+/**
+ * The same six tiles on a phone. Two feature rows carry a full-width tile, the
+ * rest pair up — enough variation that the band reads as an edit rather than a
+ * checkerboard. Heights are sized so the whole band, heading included, lands
+ * inside one screen on a large phone. Height and span classes are literal for
+ * the same reason as below: Tailwind only generates class names it can read in
+ * the source.
+ */
+const MOBILE_CURATED_LAYOUT = [
+  { span: "col-span-2", height: "h-[190px]", wide: true },
+  { span: "col-span-1", height: "h-[135px]", wide: false },
+  { span: "col-span-1", height: "h-[135px]", wide: false },
+  { span: "col-span-2", height: "h-[155px]", wide: true },
+  { span: "col-span-1", height: "h-[135px]", wide: false },
+  { span: "col-span-1", height: "h-[135px]", wide: false },
+];
+
 const CURATED_LAYOUT = [
   { span: "lg:col-span-7", height: "h-[260px] md:h-[430px]", order: "lg:order-1" },
   { span: "lg:col-span-5", height: "h-[260px] md:h-[430px]", order: "lg:order-2" },
@@ -84,32 +102,40 @@ async function loadHomePage() {
 
 function Hero({ collection, image }: { collection: CollectionRef | undefined; image: EditorialImage }) {
   return (
-    <section className="relative h-[520px] overflow-hidden md:h-[660px]" aria-labelledby="hero-heading">
+    <section
+      // Fills what is left of the first screen under the sticky header, so the
+      // page opens on the photograph and nothing else.
+      className="relative flex min-h-[calc(100svh-var(--header-h))] flex-col overflow-hidden"
+      aria-labelledby="hero-heading"
+    >
       <div className="tile-ground absolute inset-0">
+        {/* Requested at full frame rather than a fixed crop: the box is now
+            viewport-shaped, so `object-position` does the framing — held low
+            enough that the sofa, table and chairs stay in shot at every width. */}
         <img
-          src={shopifyImageUrl(image.url, { width: 2000, height: 1320, crop: "center" })}
-          srcSet={srcSetFor(image.url, { width: 2000, height: 1320, crop: "center" })}
+          src={shopifyImageUrl(image.url, { width: 2000 })}
+          srcSet={srcSetFor(image.url, { width: 2000 })}
           sizes="100vw"
           alt=""
-          className="washed h-full w-full object-cover"
+          className="washed h-full w-full object-cover object-[50%_82%] md:object-[50%_72%]"
           loading="eager"
           fetchPriority="high"
           width={2000}
-          height={1320}
+          height={1245}
         />
       </div>
       <div className="scrim-hero pointer-events-none absolute inset-0" />
 
-      <div className="max-w-page px-margin relative mx-auto flex h-full flex-col justify-center">
+      <div className="max-w-page px-margin relative mx-auto flex w-full flex-1 flex-col justify-center py-20">
         <div className="max-w-[640px]">
           <p className="type-overline mb-4 text-[#e2d2bc]">Winter 26 · The Quiet Rooms</p>
           <h1
             id="hero-heading"
-            className="font-heading mb-5 text-[44px] leading-[1.02] font-light tracking-[-0.025em] text-white text-pretty md:text-[74px]"
+            className="font-heading mb-5 text-[38px] leading-[1.02] font-light tracking-[-0.025em] text-white text-pretty md:text-[74px]"
           >
             Made to be lived in
           </h1>
-          <p className="mb-8 max-w-[470px] text-[16px] leading-relaxed text-white/85 md:text-[17.5px]">
+          <p className="mb-8 max-w-[470px] text-[15px] leading-relaxed text-white/85 md:text-[17.5px]">
             Solid oak, Australian wool and bouclé you can actually live on. Built slowly, in small
             runs, to be kept.
           </p>
@@ -140,14 +166,14 @@ type BandCopy = {
   cta?: { label: string; href: string };
 };
 
-function BandCopyBlock({ copy, align }: { copy: BandCopy; align: "start" | "end" }) {
+function BandCopyBlock({ copy }: { copy: BandCopy }) {
   return (
-    <div className={`max-w-[460px] ${align === "end" ? "md:ms-auto md:text-right" : ""}`}>
+    <div className="max-w-[460px]">
       <p className="type-overline mb-3.5 text-[#e2d2bc]">{copy.kicker}</p>
-      <h2 className="font-heading mb-3.5 text-[30px] leading-[1.04] font-light tracking-[-0.025em] text-white text-pretty md:text-[42px]">
+      <h2 className="font-heading mb-3 text-[24px] leading-[1.06] font-light tracking-[-0.025em] text-white text-pretty md:mb-3.5 md:text-[42px] md:leading-[1.04]">
         {copy.title}
       </h2>
-      <p className="text-[15px] leading-relaxed text-white/85 md:text-[16px]">{copy.body}</p>
+      <p className="text-[14px] leading-relaxed text-white/85 md:text-[16px]">{copy.body}</p>
       {copy.cta ? (
         <Link
           href={copy.cta.href}
@@ -161,25 +187,13 @@ function BandCopyBlock({ copy, align }: { copy: BandCopy; align: "start" | "end"
 }
 
 /**
- * One photograph carrying both messages — left-aligned and right-aligned on
- * desktop, stacked on mobile. The scrim darkens both edges rather than one, so
- * each block clears AA over whatever the photo is doing behind it.
+ * One photograph carrying one message, set against the left edge. The scrim is
+ * weighted the same way, so the copy clears AA over whatever the photo is doing
+ * behind it.
  */
-function SplitBand({
-  image,
-  left,
-  right,
-}: {
-  image: EditorialImage;
-  left: BandCopy;
-  right: BandCopy;
-}) {
+function MessageBand({ image, copy }: { image: EditorialImage; copy: BandCopy }) {
   return (
-    <section
-      data-reveal
-      className="relative overflow-hidden"
-      aria-label={`${left.title}. ${right.title}`}
-    >
+    <section data-reveal className="relative overflow-hidden" aria-label={copy.title}>
       <div className="tile-ground absolute inset-0">
         <img
           src={shopifyImageUrl(image.url, { width: 2400, height: 1200, crop: "center" })}
@@ -192,11 +206,10 @@ function SplitBand({
           height={1200}
         />
       </div>
-      <div className="scrim-split pointer-events-none absolute inset-0" />
+      <div className="scrim-band pointer-events-none absolute inset-0" />
 
-      <div className="max-w-page px-margin relative mx-auto grid gap-12 py-20 md:grid-cols-2 md:gap-16 md:py-28">
-        <BandCopyBlock copy={left} align="start" />
-        <BandCopyBlock copy={right} align="end" />
+      <div className="max-w-page px-margin relative mx-auto py-16 md:py-28">
+        <BandCopyBlock copy={copy} />
       </div>
     </section>
   );
@@ -211,14 +224,20 @@ export default async function HomePage() {
   const categories = pickCollections(byHandle, CATEGORY_HANDLES);
   const heroCollection = byHandle.get("long-afternoons") ?? byHandle.get("shop-all");
   const bandCollection = byHandle.get("warm-timber") ?? heroCollection;
-  const visitCollection = byHandle.get("soft-texture") ?? heroCollection;
 
-  // The journal cards each want their own shot; where a dedicated editorial
-  // photo reads better than the collection's own image, it is keyed here.
-  const editorialImageOverrides: Record<string, EditorialImage> = {
-    "warm-timber": EDITORIAL_IMAGES.hero,
-    "pale-and-quiet": EDITORIAL_IMAGES.editorialColour,
-  };
+  // A post is dropped if its collection is missing, so the grid never shows a
+  // tile that leads nowhere.
+  const instagramPosts: InstagramPost[] = INSTAGRAM_POSTS.flatMap((post) => {
+    const collection = byHandle.get(post.handle);
+    if (!collection) return [];
+    return [
+      {
+        href: collectionHref(collection.handle),
+        caption: post.caption,
+        image: "image" in post ? post.image : collection.image,
+      },
+    ];
+  });
 
   // The three browse sections, now panels of one tabbed block. Each is dropped
   // if it has nothing to show, so an empty tab is never offered. Order matters:
@@ -228,7 +247,8 @@ export default async function HomePage() {
   if (rooms.length > 0) {
     browseTabs.push({
       id: "rooms",
-      label: "Shop by room",
+      label: "All spaces",
+      heading: "Shop by room",
       panel: (
         <>
           {/* Mobile: every room fits on screen at once — a two-column mosaic
@@ -255,7 +275,7 @@ export default async function HomePage() {
                 className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 View all rooms
-                <Icon d={ICON_PATHS.arrowRight} size={16} />
+                <Arrow size={16} />
               </Link>
             </div>
           </div>
@@ -278,7 +298,7 @@ export default async function HomePage() {
                 className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 View all rooms
-                <Icon d={ICON_PATHS.arrowRight} size={16} />
+                <Arrow size={16} />
               </Link>
             </div>
           </div>
@@ -290,7 +310,8 @@ export default async function HomePage() {
   if (categories.length > 0) {
     browseTabs.push({
       id: "categories",
-      label: "Popular categories",
+      label: "Popular",
+      heading: "Popular categories",
       panel: (
         <div className="max-w-page px-margin mx-auto">
           <ul
@@ -309,7 +330,7 @@ export default async function HomePage() {
               className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               View all categories
-              <Icon d={ICON_PATHS.arrowRight} size={16} />
+              <Arrow size={16} />
             </Link>
           </div>
         </div>
@@ -326,7 +347,8 @@ export default async function HomePage() {
 
     browseTabs.push({
       id: "trending",
-      label: "Trending pieces",
+      label: "Trending",
+      heading: "Trending pieces",
       panel: (
         <>
           <div className="md:hidden">
@@ -353,7 +375,7 @@ export default async function HomePage() {
                 className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 View all
-                <Icon d={ICON_PATHS.arrowRight} size={16} />
+                <Arrow size={16} />
               </Link>
             </div>
           </div>
@@ -438,22 +460,14 @@ export default async function HomePage() {
       {browseTabs.length > 0 ? <HomeTabs tabs={browseTabs} /> : null}
 
       <div className="mt-20 md:mt-25">
-        <SplitBand
+        <MessageBand
           image={EDITORIAL_IMAGES.bandLook}
-          left={{
+          copy={{
             kicker: "The Walnur look",
             title: "Natural textures, relaxed rooms",
             body: "Oak, wool, jute and linen — pieces designed for the way Australians actually live, and styled here in a Federation cottage in Northcote.",
             cta: bandCollection
               ? { label: "Shop the look", href: collectionHref(bandCollection.handle) }
-              : undefined,
-          }}
-          right={{
-            kicker: "Visit us",
-            title: "See it, sit in it, take a sample home",
-            body: "Every fabric and finish is on the floor in Melbourne — and our team will pull swatches for you to borrow.",
-            cta: visitCollection
-              ? { label: "Browse the range", href: collectionHref(visitCollection.handle) }
               : undefined,
           }}
         />
@@ -462,9 +476,11 @@ export default async function HomePage() {
       {/* Shop by collection — dark band */}
       {curated.length > 0 ? (
         <section className="bg-walnut-900" aria-labelledby="collections-heading">
-          <div className="max-w-page px-margin mx-auto py-16 md:py-22">
+          <div className="max-w-page px-margin mx-auto py-14 md:py-22">
             <div data-reveal>
-              <div className="mb-8 flex items-end justify-between gap-6">
+              {/* Stacked on mobile — side by side the heading wraps and the link
+                  gets squeezed against it. */}
+              <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6 md:mb-8">
                 <h2 id="collections-heading" className="type-display m-0 text-[#f6efe6]">
                   Shop by collection
                 </h2>
@@ -473,22 +489,26 @@ export default async function HomePage() {
                   className="text-walnut-300 focus-visible:outline-accent inline-flex shrink-0 items-center gap-2 text-[13px] tracking-[0.1em] uppercase no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
                   All collections
-                  <Icon d={ICON_PATHS.arrowRight} size={16} />
+                  <Arrow size={16} />
                 </Link>
               </div>
 
-              {/* Mobile: all six on screen as a two-column grid, rather than a
-                  carousel that hides most of them off to the side. */}
-              <ul role="list" className="grid grid-cols-2 gap-3 md:hidden">
-                {curated.map((collection) => (
-                  <li key={`m-${collection.handle}`}>
-                    <CollectionTile
-                      collection={collection}
-                      heightClass="h-[150px]"
-                      sizes="50vw"
-                    />
-                  </li>
-                ))}
+              {/* Mobile: all six stay on screen — a carousel would hide most of
+                  them — but on a mosaic rhythm rather than a uniform grid. */}
+              <ul role="list" className="grid grid-cols-2 gap-x-3 gap-y-4 md:hidden">
+                {curated.map((collection, curatedIndex) => {
+                  const layout = MOBILE_CURATED_LAYOUT[curatedIndex] ?? MOBILE_CURATED_LAYOUT[1];
+                  return (
+                    <li key={`m-${collection.handle}`} className={layout.span}>
+                      <CollectionTile
+                        collection={collection}
+                        heightClass={layout.height}
+                        sizes={layout.wide ? "100vw" : "50vw"}
+                        compact={!layout.wide}
+                      />
+                    </li>
+                  );
+                })}
               </ul>
 
               <div className="hidden gap-5 md:grid md:grid-cols-2 lg:grid-cols-12">
@@ -505,7 +525,7 @@ export default async function HomePage() {
                     className="text-walnut-300 focus-visible:outline-accent inline-flex items-center gap-2 text-[12.5px] tracking-[0.1em] uppercase no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
                     Browse everything
-                    <Icon d={ICON_PATHS.arrowRight} size={15} />
+                    <Arrow size={15} />
                   </Link>
                 </div>
 
@@ -530,15 +550,42 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      {/* Marquee — two identical halves so the -50% loop lands on the seam. */}
-      <section className="bg-sand-900 text-sand-200 overflow-hidden py-5.5" aria-hidden="true">
+      <InstagramPanel posts={instagramPosts} />
+
+      {/* Swatch request — the deep brown band, hairlined off the marquee below
+          so the two still read as separate bands. */}
+      <section aria-labelledby="swatch-heading">
+        <div
+          data-reveal
+          className="bg-walnut-900 grid items-center gap-9 border-y border-[color:rgb(232_224_212/0.16)] px-[var(--spacing-margin)] py-14 md:gap-10 md:py-22 lg:grid-cols-[1.1fr_1fr]"
+        >
+          <div>
+            <p className="type-overline text-walnut-300 mb-3">Free swatches</p>
+            <h2 id="swatch-heading" className="type-display mb-3.5 max-w-[470px] text-[#f6efe6]">
+              Take the room home before you buy it
+            </h2>
+            <p className="m-0 max-w-[450px] text-[15px] text-[#f6efe6]/75 md:text-[16px]">
+              Order up to six fabric and timber swatches, free. We send them in a linen wallet so you
+              can live with them for a week.
+            </p>
+          </div>
+          <SwatchRequestForm />
+        </div>
+      </section>
+
+      {/* Marquee — two identical halves so the -50% loop lands on the seam.
+          Shares the footer's surface, so a hairline keeps it a distinct band. */}
+      <section
+        className="bg-sand-900 text-sand-200 overflow-hidden border-b border-[color:rgb(232_224_212/0.16)] py-5.5"
+        aria-hidden="true"
+      >
         <div className="marquee-track">
           {[0, 1].map((half) => (
             <div key={half} className="flex">
               {MARQUEE_PHRASES.map((phrase) => (
                 <span
                   key={`${half}-${phrase}`}
-                  className="font-heading flex items-center gap-6.5 px-6.5 text-[20px] font-light opacity-95 md:text-[25px]"
+                  className="font-heading flex items-center gap-5 px-5 text-[16px] font-light opacity-95 md:gap-6.5 md:px-6.5 md:text-[25px]"
                 >
                   {phrase}
                   <span className="bg-walnut-400 block size-[7px] rounded-full" />
@@ -548,81 +595,6 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
-
-      {/* Editorial pair */}
-      <section className="grid md:grid-cols-2" aria-label="From the journal">
-        {EDITORIAL_CARDS.flatMap((card) => {
-          const collection = byHandle.get(card.handle);
-          if (!collection) return [];
-          const image = editorialImageOverrides[card.handle] ?? collection.image;
-          return [
-            <Link
-              key={card.handle}
-              href={collectionHref(collection.handle)}
-              data-reveal
-              className="group text-on-surface block no-underline"
-            >
-              <div className="tile-ground relative h-[320px] overflow-hidden md:h-[520px]">
-                {image ? (
-                  <img
-                    src={shopifyImageUrl(image.url, {
-                      width: 1200,
-                      height: 1040,
-                      crop: "center",
-                    })}
-                    srcSet={srcSetFor(image.url, {
-                      width: 1200,
-                      height: 1040,
-                      crop: "center",
-                    })}
-                    sizes="(min-width: 768px) 50vw, 100vw"
-                    alt=""
-                    className="washed h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-1000 motion-safe:group-hover:scale-105"
-                    loading="lazy"
-                    width={1200}
-                    height={1040}
-                  />
-                ) : null}
-              </div>
-              <div className="px-margin flex items-start justify-between gap-5 pt-6">
-                <div>
-                  <p className="type-overline text-walnut-700 mb-2">{card.kicker}</p>
-                  <p className="font-heading max-w-[420px] text-[24px] leading-[1.08] font-light md:text-[30px]">
-                    {card.title}
-                  </p>
-                  <p className="text-sand-700 mt-2.5 max-w-[430px] text-[14.5px] text-pretty">
-                    {card.body}
-                  </p>
-                </div>
-                <span className="border-border text-on-surface group-hover:bg-interactive group-hover:text-interactive-text grid size-[52px] shrink-0 place-items-center rounded-[7px] border motion-safe:transition-[transform,background-color,color] motion-safe:duration-500 motion-safe:group-hover:translate-x-1">
-                  <Icon d={ICON_PATHS.arrowRight} size={19} />
-                </span>
-              </div>
-            </Link>,
-          ];
-        })}
-      </section>
-
-      {/* Swatch request */}
-      <section className="mt-16 md:mt-20" aria-labelledby="swatch-heading">
-        <div
-          data-reveal
-          className="bg-walnut-200 relative grid items-center gap-10 overflow-hidden px-[var(--spacing-margin)] py-16 md:py-22 lg:grid-cols-[1.1fr_1fr]"
-        >
-          <div className="bg-walnut-300 pointer-events-none absolute -end-[90px] -bottom-[130px] size-[340px] rounded-full opacity-65" />
-          <div className="relative">
-            <h2 id="swatch-heading" className="type-display mb-3.5 max-w-[470px]">
-              Take the room home before you buy it
-            </h2>
-            <p className="text-walnut-800 m-0 max-w-[450px] text-[16px]">
-              Order up to six fabric and timber swatches, free. We send them in a linen wallet so you
-              can live with them for a week.
-            </p>
-          </div>
-          <SwatchRequestForm />
-        </div>
-      </section>
-
     </main>
   );
 }

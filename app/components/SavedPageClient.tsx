@@ -7,7 +7,7 @@ import type { ProductCardData } from "../lib/product-card-fragment";
 import { collectionHref } from "../lib/navigation";
 import { useSaved } from "../lib/saved";
 import { ProductCard } from "./ProductCard";
-import { Icon, ICON_PATHS } from "./WalnutMark";
+import { Arrow } from "./WalnutMark";
 
 export function SavedPageClient() {
   const { handles, count, clear } = useSaved();
@@ -101,7 +101,7 @@ export function SavedPageClient() {
               className="button-primary rounded-button focus-visible:outline-accent mt-6 inline-flex items-center gap-2 px-6 py-3.5 text-[14px] no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               Browse the range
-              <Icon d={ICON_PATHS.arrowRight} size={16} />
+              <Arrow size={16} />
             </Link>
           </div>
         )}

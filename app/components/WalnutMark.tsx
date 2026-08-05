@@ -72,6 +72,40 @@ export function Icon({
   );
 }
 
+/**
+ * The arrow that follows link text and sits on tiles. Drawn apart from `Icon`:
+ * at the chrome's 2.75 stroke a 15px arrow reads as a blob beside 300-weight
+ * headings, so this one is hairline, with a long shaft and a small head.
+ */
+export function Arrow({
+  size = 16,
+  direction = "right",
+  className,
+}: {
+  size?: number;
+  direction?: "right" | "left";
+  className?: string;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={direction === "left" ? { transform: "scaleX(-1)" } : undefined}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M3 12h17.5M14.5 6.5 20.5 12l-6 5.5" />
+    </svg>
+  );
+}
+
 export const ICON_PATHS = {
   arrowRight: "M5 12h14M13 6l6 6-6 6",
   arrowLeft: "M19 12H5M11 6l-6 6 6 6",

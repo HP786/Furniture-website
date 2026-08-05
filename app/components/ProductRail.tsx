@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
-import { Icon, ICON_PATHS } from "./WalnutMark";
+import { Arrow } from "./WalnutMark";
 
 /**
  * Scrolling rail with prev/next controls and a slow auto-drift.
@@ -129,7 +129,7 @@ export function ProductRail({
               className="text-walnut-700 focus-visible:outline-accent hidden items-center gap-2 text-[13px] tracking-[0.1em] uppercase no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:inline-flex"
             >
               {viewAllLabel}
-              <Icon d={ICON_PATHS.arrowRight} size={16} />
+              <Arrow size={16} />
             </a>
           ) : null}
           <div className="hidden gap-2 md:flex">
@@ -143,7 +143,7 @@ export function ProductRail({
               aria-label="Scroll left"
               className="border-border text-on-surface hover:bg-sand-900 hover:text-sand-100 hover:border-sand-900 focus-visible:outline-accent grid size-[46px] cursor-pointer place-items-center rounded-full border bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-current motion-safe:transition-colors"
             >
-              <Icon d={ICON_PATHS.arrowLeft} />
+              <Arrow size={18} direction="left" />
             </button>
             <button
               type="button"
@@ -155,7 +155,7 @@ export function ProductRail({
               aria-label="Scroll right"
               className="border-border text-on-surface hover:bg-sand-900 hover:text-sand-100 hover:border-sand-900 focus-visible:outline-accent grid size-[46px] cursor-pointer place-items-center rounded-full border bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-current motion-safe:transition-colors"
             >
-              <Icon d={ICON_PATHS.arrowRight} />
+              <Arrow size={18} />
             </button>
           </div>
         </div>

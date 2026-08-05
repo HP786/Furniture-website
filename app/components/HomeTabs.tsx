@@ -4,7 +4,10 @@ import { useId, useRef, useState, type ReactNode } from "react";
 
 export type HomeTab = {
   id: string;
+  /** Short text on the tab itself. */
   label: string;
+  /** Full section heading, shown beside the tabs for whichever tab is open. */
+  heading: string;
   panel: ReactNode;
 };
 
@@ -36,20 +39,25 @@ export function HomeTabs({ tabs }: { tabs: HomeTab[] }) {
 
   return (
     <section className="pt-14 md:pt-20" aria-label="Browse the range">
-      <div
-        role="tablist"
-        aria-label="Browse the range"
-        onKeyDown={onKeyDown}
-        className="scrollbar-none max-w-page px-margin mx-auto mb-9 flex items-stretch justify-start gap-0 overflow-x-auto md:justify-center"
-      >
-        {tabs.map((tab, index) => {
-          const selected = index === active;
-          return (
-            <div key={tab.id} className="flex shrink-0 items-center">
-              {index > 0 ? (
-                <span aria-hidden="true" className="bg-border mx-6 h-6 w-px shrink-0 md:mx-12" />
-              ) : null}
+      {/* The open tab titles the block, so the heading carries the full wording
+          and the tabs themselves stay short. */}
+      <div className="max-w-page px-margin mx-auto mb-9 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
+        <div>
+          <h2 className="type-display m-0">{tabs[active].heading}</h2>
+          <span aria-hidden="true" className="bg-border mt-2.5 block h-px w-[86px]" />
+        </div>
+
+        <div
+          role="tablist"
+          aria-label="Browse the range"
+          onKeyDown={onKeyDown}
+          className="scrollbar-none -mx-[var(--spacing-margin)] flex shrink-0 gap-7 overflow-x-auto px-[var(--spacing-margin)] pb-1 sm:mx-0 sm:px-0 sm:pb-0"
+        >
+          {tabs.map((tab, index) => {
+            const selected = index === active;
+            return (
               <button
+                key={tab.id}
                 ref={(node) => {
                   tabRefs.current[index] = node;
                 }}
@@ -60,7 +68,7 @@ export function HomeTabs({ tabs }: { tabs: HomeTab[] }) {
                 aria-controls={`${baseId}-panel-${tab.id}`}
                 tabIndex={selected ? 0 : -1}
                 onClick={() => setActive(index)}
-                className={`font-heading focus-visible:outline-accent cursor-pointer border-b-2 bg-transparent pb-1.5 text-[15px] font-light tracking-[0.14em] whitespace-nowrap uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 motion-safe:transition-colors md:text-[18px] ${
+                className={`focus-visible:outline-accent shrink-0 cursor-pointer border-b bg-transparent pb-1.5 text-[12px] tracking-[0.14em] whitespace-nowrap uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 motion-safe:transition-colors md:text-[12.5px] ${
                   selected
                     ? "border-on-surface text-on-surface"
                     : "text-sand-600 hover:text-on-surface border-transparent"
@@ -68,9 +76,9 @@ export function HomeTabs({ tabs }: { tabs: HomeTab[] }) {
               >
                 {tab.label}
               </button>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {tabs.map((tab, index) => (
