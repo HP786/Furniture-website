@@ -3,12 +3,14 @@
 import { CollectionProvider, useCollection } from "@shopify/hydrogen/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Fragment } from "react";
 
 import type { CollectionPageData } from "../lib/collection";
 import { shopifyImageUrl, srcSetFor } from "../lib/image";
 import { toJsonLd } from "../lib/json-ld";
 import { collectionHref, type CollectionRef } from "../lib/navigation";
 import { CollectionViewedTracker } from "./AnalyticsTrackers";
+import { CollectionBrowseRow } from "./CollectionBrowseRow";
 import {
   ActiveFilterChips,
   COLLECTION_SORT_OPTIONS,
@@ -22,42 +24,65 @@ import { ProductCard } from "./ProductCard";
 
 const FILTER_DRAWER_ID = "collection-filter-drawer";
 
-function breadcrumbJsonLd(collection: CollectionPageData["collection"], origin: string) {
+/** Where this collection sits in the browse tree — see `lib/taxonomy`. */
+type BrowseProps = {
+  /** Ancestors, root-first, for the breadcrumb. */
+  trail: CollectionRef[];
+  /** The step back up, or null at the root of the tree. */
+  up: CollectionRef | null;
+  /** Children, or at a leaf the rest of the shelf this collection sits on. */
+  tiles: CollectionRef[];
+  /** True when `tiles` are siblings, so one of them is the current collection. */
+  showActive: boolean;
+};
+
+/** Home / Shop / every ancestor in the browse tree / this collection. */
+function breadcrumbJsonLd(
+  collection: CollectionPageData["collection"],
+  trail: CollectionRef[],
+  origin: string,
+) {
+  const crumbs = [
+    { name: "Home", item: origin },
+    { name: "Shop", item: `${origin}/collections` },
+    ...trail.map((ancestor) => ({
+      name: ancestor.title,
+      item: `${origin}/collections/${ancestor.handle}`,
+    })),
+    { name: collection.title, item: `${origin}/collections/${collection.handle}` },
+  ];
+
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: origin,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: collection.title,
-        item: `${origin}/collections/${collection.handle}`,
-      },
-    ],
+    itemListElement: crumbs.map((crumb, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: crumb.name,
+      item: crumb.item,
+    })),
   };
 }
 
 function CollectionHeader({
   collection,
+  trail,
   origin,
 }: {
   collection: CollectionPageData["collection"];
+  trail: CollectionRef[];
   origin: string;
 }) {
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: toJsonLd(breadcrumbJsonLd(collection, origin)) }}
+        dangerouslySetInnerHTML={{ __html: toJsonLd(breadcrumbJsonLd(collection, trail, origin)) }}
       />
       <nav aria-label="Breadcrumb" className="mb-5">
-        <ol className="text-sand-600 flex items-center gap-2 text-[12.5px]">
+        {/* Wraps rather than scrolls — a deep trail on a phone is still only
+            three or four short words, and a hidden crumb is a lost way back. */}
+        <ol className="text-sand-600 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px]">
           <li>
             <Link href="/" className="hover:text-on-surface rounded-sm motion-safe:transition-colors">
               Home
@@ -72,6 +97,19 @@ function CollectionHeader({
               Shop
             </Link>
           </li>
+          {trail.map((ancestor) => (
+            <Fragment key={ancestor.handle}>
+              <li aria-hidden="true">/</li>
+              <li>
+                <Link
+                  href={collectionHref(ancestor.handle)}
+                  className="hover:text-on-surface rounded-sm motion-safe:transition-colors"
+                >
+                  {ancestor.title}
+                </Link>
+              </li>
+            </Fragment>
+          ))}
           <li aria-hidden="true">/</li>
           <li>
             <span aria-current="page" className="text-on-surface">
@@ -114,43 +152,15 @@ function CollectionHeader({
   );
 }
 
-/** Quick-jump chips across sibling collections. */
-function CollectionChips({
-  chips,
-  activeHandle,
+function CollectionContent({
+  data,
+  trail,
+  up,
+  tiles,
+  showActive,
 }: {
-  chips: CollectionRef[];
-  activeHandle: string;
-}) {
-  if (chips.length === 0) return null;
-
-  return (
-    <nav aria-label="Browse collections" className="mb-8">
-      <ul role="list" className="flex flex-wrap gap-2.5">
-        {chips.map((chip) => {
-          const active = chip.handle === activeHandle;
-          return (
-            <li key={chip.handle}>
-              <Link
-                href={collectionHref(chip.handle)}
-                aria-current={active ? "page" : undefined}
-                className={`focus-visible:outline-accent inline-flex items-center rounded-[7px] border px-4.5 py-2.5 text-[13px] font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors ${
-                  active
-                    ? "border-sand-900 bg-sand-900 text-sand-100"
-                    : "border-border text-on-surface hover:bg-surface-secondary"
-                }`}
-              >
-                {chip.title}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
-  );
-}
-
-function CollectionContent({ data, chips }: { data: CollectionPageData; chips: CollectionRef[] }) {
+  data: CollectionPageData;
+} & BrowseProps) {
   const state = useCollection();
   const basePath = `/collections/${data.collection.handle}`;
   const { items, pageInfo, pending, setPending } = useLoadMore({
@@ -164,8 +174,13 @@ function CollectionContent({ data, chips }: { data: CollectionPageData; chips: C
     <main className="flex-1" id="main-content" tabIndex={-1}>
       <div className="max-w-page px-margin mx-auto w-full py-8 md:py-12">
         <CollectionViewedTracker collection={data.collection} />
-        <CollectionHeader collection={data.collection} origin={data.origin} />
-        <CollectionChips chips={chips} activeHandle={data.collection.handle} />
+        <CollectionHeader collection={data.collection} trail={trail} origin={data.origin} />
+        <CollectionBrowseRow
+          up={up}
+          tiles={tiles}
+          activeHandle={data.collection.handle}
+          showActive={showActive}
+        />
 
         <div className="lg:grid lg:grid-cols-[250px_1fr] lg:gap-11">
           <aside className="hidden lg:block" aria-label="Filters">
@@ -250,11 +265,13 @@ function CollectionContent({ data, chips }: { data: CollectionPageData; chips: C
 
 export function CollectionPageClient({
   data,
-  chips = [],
+  trail,
+  up,
+  tiles,
+  showActive,
 }: {
   data: CollectionPageData;
-  chips?: CollectionRef[];
-}) {
+} & BrowseProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -274,7 +291,13 @@ export function CollectionPageClient({
         router.refresh();
       }}
     >
-      <CollectionContent data={data} chips={chips} />
+      <CollectionContent
+        data={data}
+        trail={trail}
+        up={up}
+        tiles={tiles}
+        showActive={showActive}
+      />
     </CollectionProvider>
   );
 }

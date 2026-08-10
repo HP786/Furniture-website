@@ -7,7 +7,7 @@ import { getStorefrontClient } from "./storefront";
 /** One round trip shared by the chrome and the home page's tiles. */
 const COLLECTION_INDEX_QUERY = gql(`
   query CollectionIndex {
-    collections(first: 40) {
+    collections(first: 100) {
       nodes {
         handle
         title

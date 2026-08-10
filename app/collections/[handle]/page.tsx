@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { CollectionPageClient } from "../../components/CollectionPageClient";
 import { loadCollectionPage } from "../../lib/collection";
 import { loadCollectionIndex } from "../../lib/collection-index";
-import { CATEGORY_HANDLES, pickCollections, ROOM_HANDLES } from "../../lib/navigation";
+import { pickCollections, SHOP_ALL_HANDLE } from "../../lib/navigation";
+import { ancestorsOf, browseRow } from "../../lib/taxonomy";
 import { toURLSearchParams, type NextSearchParams } from "../../lib/url";
 
 export const dynamic = "force-dynamic";
@@ -46,21 +47,24 @@ export default async function CollectionPage({ params, searchParams }: Collectio
     loadCollectionIndex(),
   ]);
 
-  // The chip row is the design's quick-jump between sibling collections. Rooms
-  // come first, then piece types — deduped, since a handle can appear in both
-  // lists, and always led by "Shop All".
-  const siblings = [
-    index.byHandle.get("shop-all"),
-    ...pickCollections(index.byHandle, ROOM_HANDLES),
-    ...pickCollections(index.byHandle, CATEGORY_HANDLES),
-  ].flatMap((collection) => (collection ? [collection] : []));
+  // One step of the browse tree, not the whole catalogue: Living Room offers the
+  // pieces in a living room, Armchairs the rest of the living-room shelf.
+  const row = browseRow(handle);
 
-  const seen = new Set<string>();
-  const chips = siblings.filter((collection) => {
-    if (seen.has(collection.handle)) return false;
-    seen.add(collection.handle);
-    return true;
-  });
+  // "Shop" in the breadcrumb already stands for the whole catalogue, so the root
+  // of the tree would only repeat it.
+  const trail = pickCollections(
+    index.byHandle,
+    ancestorsOf(handle).filter((ancestor) => ancestor !== SHOP_ALL_HANDLE),
+  );
 
-  return <CollectionPageClient data={data} chips={chips} />;
+  return (
+    <CollectionPageClient
+      data={data}
+      trail={trail}
+      up={(row.up ? index.byHandle.get(row.up) : null) ?? null}
+      tiles={pickCollections(index.byHandle, row.tiles)}
+      showActive={row.isSiblingRow}
+    />
+  );
 }
