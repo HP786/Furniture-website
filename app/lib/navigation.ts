@@ -106,7 +106,9 @@ export const CATEGORY_HANDLES = [
 export type CategoryTileSource =
   | { photo: string }
   | { collection: string }
-  | { editorial: keyof typeof EDITORIAL_IMAGES };
+  | { editorial: keyof typeof EDITORIAL_IMAGES }
+  /** A supplied photograph in `public/`, for a type the catalogue has none of. */
+  | { file: string };
 
 export const CATEGORY_TILE_SOURCES: Record<string, CategoryTileSource> = {
   // Each one is chosen for its subject, not just for being a room: the piece on
@@ -117,9 +119,11 @@ export const CATEGORY_TILE_SOURCES: Record<string, CategoryTileSource> = {
   "side-tables": { photo: "CoveSideTable_Clay" },
   "bedside-tables": { photo: "Leo_Small_Oak_Plinth" },
   "dining-tables": { editorial: "bandLook" },
-  // Ottomans, soft texture, lived-in leather and warm timber keep the
-  // collection's own image: the catalogue has no in-room shot of an ottoman,
-  // and the other three are already photographs of the thing they name.
+  // The catalogue's every ottoman image is a studio cut-out, so this one is
+  // supplied rather than borrowed.
+  ottomans: { file: "/editorial/ottoman.webp" },
+  // Soft texture, lived-in leather and warm timber keep the collection's own
+  // image: all three are already photographs of the thing they name.
 };
 /** The social handle behind the Instagram panel and the footer's icon row. */
 export const INSTAGRAM_HANDLE = "@walnur";

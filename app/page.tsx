@@ -258,6 +258,12 @@ async function loadHomePage() {
       categoryImages[handle] = EDITORIAL_IMAGES[source.editorial];
       continue;
     }
+    if ("file" in source) {
+      // The tile renders its image as decorative — the collection name sits
+      // directly beneath it as the link — so there is no alt text to carry.
+      categoryImages[handle] = { url: source.file, altText: null };
+      continue;
+    }
     for (const product of arrivals) {
       const styled = product.images.nodes.find((image) => image.url.includes(source.photo));
       if (!styled) continue;
