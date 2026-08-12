@@ -418,8 +418,12 @@ function SplitFeature({
   return (
     <section data-reveal aria-label={copy.title} className={dark ? "bg-walnut-900" : ""}>
       <div
+        // The dark band paints its own ground, so it carries the space top and
+        // bottom. On the light ground the section above already supplies the
+        // gap overhead; this only has to close the one underneath, or the
+        // photograph runs straight into whatever follows.
         className={`max-w-page px-margin mx-auto grid items-center gap-9 md:grid-cols-2 md:gap-14 lg:gap-20 ${
-          dark ? "py-14 md:py-24" : ""
+          dark ? "py-14 md:py-24" : "pb-16 md:pb-24"
         }`}
       >
         <div
@@ -673,7 +677,7 @@ export default async function HomePage() {
       {newArrivals.length > 0 ? (
         <section
           data-reveal
-          className="pt-16 md:pt-24"
+          className="py-16 md:py-24"
           aria-label="New arrivals"
         >
           <ProductRail title="New arrivals">
@@ -699,7 +703,7 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      <div className="mt-20 md:mt-28">
+      <div>
         <SplitFeature
           image={EDITORIAL_IMAGES.bandLook}
           objectPosition="object-[50%_62%]"
