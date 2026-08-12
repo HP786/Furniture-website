@@ -77,11 +77,58 @@ export function CollectionTile({
 }
 
 /**
- * The circular category chip — image in a circle, label beneath. `tone` picks
- * the label colours: the row sits on the dark band on the home page and on the
- * warm paper elsewhere.
+ * A category tile — the product shot in a box with the name beneath, rather
+ * than laid over it. Most category images are cut-outs on near-white, so an
+ * overlaid label the way the room tiles do it has nothing to sit against.
+ *
+ * The box is 4:5, which is the native shape of the catalogue's product shots,
+ * so nothing is cropped out of them.
  */
-export function CategoryChip({
+export function CategoryTile({
+  collection,
+  priority = false,
+  sizes = "(min-width: 768px) 20vw, 45vw",
+}: {
+  collection: CollectionRef;
+  priority?: boolean;
+  sizes?: string;
+}) {
+  return (
+    <article className="card group flex h-full flex-col gap-3.5">
+      <div className="bg-surface-secondary relative aspect-[4/5] overflow-hidden rounded-lg">
+        {collection.image ? (
+          <img
+            src={shopifyImageUrl(collection.image.url, { width: 640, height: 800, crop: "center" })}
+            srcSet={srcSetFor(collection.image.url, { width: 640, height: 800, crop: "center" })}
+            sizes={sizes}
+            alt=""
+            className="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out motion-safe:group-hover:scale-105"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
+            width={640}
+            height={800}
+          />
+        ) : null}
+      </div>
+
+      <h3 className="text-center">
+        <Link
+          href={collectionHref(collection.handle)}
+          className="card-link text-on-surface hover:text-walnut-700 focus-visible:outline-accent text-[12.5px] tracking-[0.1em] uppercase motion-safe:transition-colors"
+        >
+          {collection.title}
+        </Link>
+      </h3>
+    </article>
+  );
+}
+
+/**
+ * The circular chip — image in a circle, label beneath. `tone` picks the label
+ * colours: the row sits on the dark band on the home page and on the warm paper
+ * elsewhere.
+ */
+export function CircleChip({
   collection,
   tone = "light",
 }: {

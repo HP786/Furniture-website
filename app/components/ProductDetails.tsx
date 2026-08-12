@@ -4,18 +4,20 @@ import { canAddToCart, type SelectedOption, type StorefrontApi } from "@shopify/
 import { createProductComponents, ShopPayButton } from "@shopify/hydrogen/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import { openCartDrawer } from "../lib/cart-drawer";
 import { shopifyImageUrl, srcSetFor } from "../lib/image";
 import { formatPercentOff, formatPrice } from "../lib/money";
+import { dimensionsFromTags, specFromTags } from "../lib/product-spec";
 import { roomFromTags } from "../lib/rooms";
 import { subtitleFromTags, swatchFromTags } from "../lib/swatches";
-import { useColourways } from "./FamilyProvider";
+import { useColourways, usePieceOptions } from "./FamilyProvider";
 import type { PRODUCT_QUERY } from "../products/[handle]/page";
 import { ProductViewedTracker } from "./AnalyticsTrackers";
 import { ProductCard } from "./ProductCard";
 import { RoomTagLink } from "./RoomTag";
+import { Icon } from "./WalnutMark";
 
 type ProductQuery = StorefrontApi.ResultOf<typeof PRODUCT_QUERY>;
 type ProductData = NonNullable<ProductQuery["product"]>;
@@ -410,38 +412,92 @@ function AddToCartForm({ product }: { product: ProductData }) {
   );
 }
 
-/** "The detail" is the product's own copy; the other two are store policy. */
+/**
+ * The spec sheet. "The detail" is the product's own copy from Shopify; the rest
+ * comes from what kind of piece this is — see `product-spec.ts` for where the
+ * measurements live and how to move them onto the product itself.
+ */
 function ProductAccordions({ product }: { product: ProductData }) {
   const tags = product.tags ?? [];
+  const spec = specFromTags(tags);
+  const dimensions = dimensionsFromTags(tags);
   const swatch = swatchFromTags(tags);
   const material = subtitleFromTags(tags);
 
-  const panels = [
+  const panels: Array<{ id: string; title: string; body: ReactNode }> = [
     {
       id: "details",
       title: "The detail",
-      body: product.descriptionHtml,
-      html: true,
-    },
-    {
-      id: "materials",
-      title: "Materials & finish",
-      body: [
-        material ? `${material} over a kiln-dried hardwood frame.` : null,
-        swatch ? `Shown in ${swatch.name}.` : null,
-        "Vacuum weekly on a low setting; blot spills, never rub.",
-      ]
-        .filter(Boolean)
-        .join(" "),
-      html: false,
-    },
-    {
-      id: "delivery",
-      title: "Delivery & returns",
-      body: "Dispatched within three business days. Complimentary white-glove delivery on orders over $1,500 — we carry it in, place it and take the packaging away. Thirty days to change your mind.",
-      html: false,
+      body: (
+        <div
+          className="richtext text-sand-700 max-w-[520px] pb-5 text-[14px] leading-[1.65]"
+          dangerouslySetInnerHTML={{ __html: product.descriptionHtml }}
+        />
+      ),
     },
   ];
+
+  if (dimensions.length > 0) {
+    panels.push({
+      id: "dimensions",
+      title: "Dimensions",
+      body: (
+        <dl className="text-sand-700 max-w-[520px] pb-5 text-[14px] leading-[1.65]">
+          {dimensions.map((row) => (
+            <div key={row.label} className="border-border flex justify-between gap-6 border-b py-2.5 last:border-0">
+              <dt>{row.label}</dt>
+              <dd className="text-on-surface">{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ),
+    });
+  }
+
+  if (spec) {
+    panels.push({
+      id: "materials",
+      title: "Materials & care",
+      body: (
+        <div className="text-sand-700 max-w-[520px] pb-5 text-[14px] leading-[1.65]">
+          <ul role="list" className="mb-3 flex flex-col gap-1.5">
+            {[
+              material ? `${material} over a kiln-dried hardwood frame.` : null,
+              swatch ? `Shown in ${swatch.name}.` : null,
+              ...spec.details,
+            ]
+              .filter((line): line is string => Boolean(line))
+              .map((line) => (
+                <li key={line} className="before:text-sand-500 before:mr-2 before:content-['—']">
+                  {line}
+                </li>
+              ))}
+          </ul>
+          <p className="m-0">{spec.care}</p>
+        </div>
+      ),
+    });
+
+    panels.push({
+      id: "assembly",
+      title: "Assembly",
+      body: (
+        <p className="text-sand-700 max-w-[520px] pb-5 text-[14px] leading-[1.65]">{spec.assembly}</p>
+      ),
+    });
+  }
+
+  panels.push({
+    id: "delivery",
+    title: "Delivery, warranty and returns",
+    body: (
+      <p className="text-sand-700 max-w-[520px] pb-5 text-[14px] leading-[1.65]">
+        Dispatched within three business days from Melbourne. Complimentary white-glove delivery on
+        orders over $1,500 — we carry it in, place it and take the packaging away. Ten-year frame
+        guarantee, and thirty days to change your mind.
+      </p>
+    ),
+  });
 
   return (
     <div className="border-border flex flex-col border-t">
@@ -473,19 +529,47 @@ function ProductAccordions({ product }: { product: ProductData }) {
               </svg>
             </span>
           </summary>
-          {panel.html ? (
-            <div
-              className="richtext text-sand-700 max-w-[520px] pb-5 text-[14px] leading-[1.65]"
-              dangerouslySetInnerHTML={{ __html: panel.body }}
-            />
-          ) : (
-            <p className="text-sand-700 max-w-[520px] pb-5 text-[14px] leading-[1.65]">
-              {panel.body}
-            </p>
-          )}
+          {panel.body}
         </details>
       ))}
     </div>
+  );
+}
+
+/**
+ * The two rows every furniture page needs under the buy button: what delivery
+ * costs, and where you can go and sit on it.
+ */
+function FulfilmentRows() {
+  return (
+    <ul role="list" className="border-border bg-surface-secondary my-6 flex flex-col rounded-lg border">
+      <li className="border-border flex items-start gap-3.5 border-b p-4">
+        <Icon
+          d="M3 16V7h11v9M14 11h4l3 3v2h-7M6.5 19a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2ZM17.5 19a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2Z"
+          size={19}
+          className="text-walnut-700 mt-0.5 shrink-0"
+        />
+        <div className="min-w-0">
+          <p className="text-on-surface m-0 text-[14px]">Delivery — calculated per shipment</p>
+          <p className="text-sand-600 m-0 mt-0.5 text-[13px]">
+            Ships from Melbourne. Free white-glove delivery over $1,500.
+          </p>
+        </div>
+      </li>
+      <li className="flex items-start gap-3.5 p-4">
+        <Icon
+          d="M4 9h16l-1 11H5ZM4 9l1.5-4h13L20 9M9 13v3M15 13v3"
+          size={19}
+          className="text-walnut-700 mt-0.5 shrink-0"
+        />
+        <div className="min-w-0">
+          <p className="text-on-surface m-0 text-[14px]">Locate our showroom</p>
+          <p className="text-sand-600 m-0 mt-0.5 text-[13px]">
+            Northcote, Melbourne — on the floor Thursday to Sunday.
+          </p>
+        </div>
+      </li>
+    </ul>
   );
 }
 
@@ -496,6 +580,8 @@ function ProductInfo({ product }: { product: ProductData }) {
   const subtitle = subtitleFromTags(tags);
   const room = roomFromTags(tags);
   const colourways = useColourways(product.title);
+  const sizes = usePieceOptions(product.title, tags);
+  const spec = specFromTags(tags);
 
   return (
     <div className="flex flex-col gap-0 md:sticky md:top-38 md:self-start">
@@ -523,7 +609,7 @@ function ProductInfo({ product }: { product: ProductData }) {
       {colourways.length > 1 ? (
         <div className="mt-7">
           <div className="mb-3 flex items-baseline justify-between">
-            <span className="type-overline text-sand-700">Fabric</span>
+            <span className="type-overline text-sand-700">{spec?.finishLabel ?? "Fabric"}</span>
             <span className="text-sand-600 text-[13.5px]">{swatch?.name ?? ""}</span>
           </div>
           <ul role="list" className="flex flex-wrap gap-3">
@@ -553,7 +639,7 @@ function ProductInfo({ product }: { product: ProductData }) {
       ) : swatch ? (
         <div className="mt-7">
           <div className="mb-3 flex items-baseline justify-between">
-            <span className="type-overline text-sand-700">Fabric</span>
+            <span className="type-overline text-sand-700">{spec?.finishLabel ?? "Fabric"}</span>
             <span className="text-sand-600 text-[13.5px]">{swatch.name}</span>
           </div>
           <span
@@ -564,10 +650,40 @@ function ProductInfo({ product }: { product: ProductData }) {
         </div>
       ) : null}
 
+      {/* Sizes are separate products in this catalogue — a short plinth and a
+          tall one — so the choice is a row of links, not variant buttons. */}
+      {sizes.length > 1 ? (
+        <div className="mt-7">
+          <span className="type-overline text-sand-700 mb-3 block">Size</span>
+          <ul role="list" className="flex flex-wrap gap-2.5">
+            {sizes.map((size) => {
+              const isCurrent = size.handle === product.handle;
+              return (
+                <li key={size.handle}>
+                  <Link
+                    href={`/products/${size.handle}`}
+                    aria-current={isCurrent ? "page" : undefined}
+                    className={`focus-visible:outline-accent inline-flex min-h-11 items-center rounded-[7px] border px-5 text-[14px] no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors ${
+                      isCurrent
+                        ? "border-on-surface text-on-surface"
+                        : "border-border text-sand-700 hover:border-on-surface hover:text-on-surface"
+                    }`}
+                  >
+                    {size.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+
       <div className="mt-6">
         <VariantSelector product={product} />
       </div>
       <AddToCartForm product={product} />
+
+      <FulfilmentRows />
 
       <a
         href="#swatch-heading"
@@ -642,9 +758,9 @@ export function ProductDetails({
             <ProductInfo product={product} />
           </div>
         </section>
-        {/* "Pair it with" is Search & Discovery's COMPLEMENTARY intent — it only
-            renders once complementary products are configured for this product. */}
-        <RecommendationShelf title="Complete the room" products={complementary} />
+        {/* Search & Discovery's COMPLEMENTARY intent where it is configured,
+            otherwise picked by type — see `pairWith` on the route. */}
+        <RecommendationShelf title="Pair it with our picks" products={complementary} />
         <RecommendationShelf title="You may also like" products={related} />
       </main>
     </ProductProvider>

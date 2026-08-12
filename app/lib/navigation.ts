@@ -91,6 +91,36 @@ export const CATEGORY_HANDLES = [
   "warm-timber",
 ] as const;
 
+/**
+ * Photography for the category tiles.
+ *
+ * A collection's own image is a cut-out on near-white — right for a product
+ * card, wrong for a tile the size of a photograph. These name a styled shot
+ * instead, so every tile shows the piece in a room.
+ *
+ * `photo` is matched against the catalogue's image URLs by filename, and always
+ * names a second product image, which is what the card pool already carries.
+ * `collection` and `editorial` borrow a room photograph for the types the
+ * catalogue has no styled shot of — replace those the moment one exists.
+ */
+export type CategoryTileSource =
+  | { photo: string }
+  | { collection: string }
+  | { editorial: keyof typeof EDITORIAL_IMAGES };
+
+export const CATEGORY_TILE_SOURCES: Record<string, CategoryTileSource> = {
+  // Each one is chosen for its subject, not just for being a room: the piece on
+  // the tile has to be the piece the label names.
+  sofas: { collection: "pale-and-quiet" },
+  armchairs: { photo: "LakeFlax2_Shopify1" },
+  "coffee-tables": { photo: "ClemCoffeeTable_LightOak" },
+  "side-tables": { photo: "CoveSideTable_Clay" },
+  "bedside-tables": { photo: "Leo_Small_Oak_Plinth" },
+  "dining-tables": { editorial: "bandLook" },
+  // Ottomans, soft texture, lived-in leather and warm timber keep the
+  // collection's own image: the catalogue has no in-room shot of an ottoman,
+  // and the other three are already photographs of the thing they name.
+};
 /** The social handle behind the Instagram panel and the footer's icon row. */
 export const INSTAGRAM_HANDLE = "@walnur";
 

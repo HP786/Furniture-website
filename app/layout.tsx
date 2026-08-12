@@ -14,7 +14,7 @@ import { Providers } from "./components/Providers";
 import { getShopAnalyticsData } from "./lib/analytics-shop";
 import { cartHandlers } from "./lib/cart-handlers";
 import { loadCollectionIndex } from "./lib/collection-index";
-import { loadFamilyIndex } from "./lib/family-index";
+import { loadStoreIndex } from "./lib/family-index";
 import { BRAND_NAME, buildNavigation } from "./lib/navigation";
 import { analyticsConsent, getStoreDomain } from "./lib/shop";
 import { getStorefrontClient } from "./lib/storefront";
@@ -52,10 +52,10 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const storefrontClient = await getStorefrontClient();
-  const [{ data: cartData }, collectionIndex, familyIndex, analyticsShop] = await Promise.all([
+  const [{ data: cartData }, collectionIndex, storeIndex, analyticsShop] = await Promise.all([
     cartHandlers.get({ storefrontClient }),
     loadCollectionIndex(),
-    loadFamilyIndex(),
+    loadStoreIndex(),
     getShopAnalyticsData(),
   ]);
 
@@ -85,7 +85,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           analyticsConsent={analyticsConsent}
           enableTestTap={analyticsDebug}
         >
-          <FamilyProvider index={familyIndex}>
+          <FamilyProvider index={storeIndex}>
             <Header
               navigation={navigation}
               accountUrl={`https://${getStoreDomain()}/account/login`}

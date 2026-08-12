@@ -1,7 +1,7 @@
 import { gql, type StorefrontApi } from "@shopify/hydrogen";
 import Link from "next/link";
 
-import { CategoryChip, CollectionTile } from "./components/CollectionTile";
+import { CategoryTile, CircleChip } from "./components/CollectionTile";
 import { HomeTabs, type HomeTab } from "./components/HomeTabs";
 import { InstagramPanel, type InstagramPost } from "./components/InstagramPanel";
 import { MobileProductPager } from "./components/MobileProductPager";
@@ -16,6 +16,7 @@ import { shopifyImageUrl, srcSetFor } from "./lib/image";
 import {
   BRAND_NAME,
   CATEGORY_HANDLES,
+  CATEGORY_TILE_SOURCES,
   collectionHref,
   EDITORIAL_IMAGES,
   INSTAGRAM_POSTS,
@@ -88,7 +89,9 @@ export const HOME_QUERY = gql(
           }
         }
       }
-      newArrivals: products(first: 40, sortKey: CREATED_AT, reverse: true) {
+      # Newest first, and the same run doubles as the pool the category tiles
+      # take their photography from.
+      catalogue: products(first: 60, sortKey: CREATED_AT, reverse: true) {
         nodes {
           ...ProductCard
         }
@@ -193,15 +196,6 @@ function variedOrder(products: ProductCardData[], seen: Set<string>) {
   return deal([...byType.values()], Number.POSITIVE_INFINITY);
 }
 
-/** Column spans for the five-room mosaic, matching the design's rhythm. */
-const ROOM_SPANS = [
-  "lg:col-span-5",
-  "lg:col-span-4",
-  "lg:col-span-3",
-  "lg:col-span-6",
-  "lg:col-span-6",
-];
-
 async function loadHomePage() {
   const [collectionIndex, storefront] = await Promise.all([
     loadCollectionIndex(),
@@ -238,7 +232,7 @@ async function loadHomePage() {
   // side tables in four finishes. Deep finishes lead: the rail sits on the brown
   // ground, where a chalk bouclé on a paper-white product shot washes out.
   // Paler pieces top the rail up if the dark ones do not fill it.
-  const arrivals = (home?.newArrivals.nodes ?? []) as ProductCardData[];
+  const arrivals = (home?.catalogue.nodes ?? []) as ProductCardData[];
   const darkest = [...arrivals].sort(
     (a, b) => (swatchBrightness(a.tags ?? []) ?? 1) - (swatchBrightness(b.tags ?? []) ?? 1),
   );
@@ -249,7 +243,30 @@ async function loadHomePage() {
     ...variedOrder(darkest, finishSeen),
   ].slice(0, NEW_ARRIVAL_COUNT);
 
-  return { trending, newArrivals, index: collectionIndex };
+  // Category tiles get a styled shot rather than the collection's own cut-out.
+  // Anything that cannot be resolved is simply left out, and the tile falls
+  // back to the collection image.
+  const categoryImages: Record<string, CollectionRef["image"]> = {};
+
+  for (const [handle, source] of Object.entries(CATEGORY_TILE_SOURCES)) {
+    if ("collection" in source) {
+      const borrowed = collectionIndex.byHandle.get(source.collection)?.image;
+      if (borrowed) categoryImages[handle] = borrowed;
+      continue;
+    }
+    if ("editorial" in source) {
+      categoryImages[handle] = EDITORIAL_IMAGES[source.editorial];
+      continue;
+    }
+    for (const product of arrivals) {
+      const styled = product.images.nodes.find((image) => image.url.includes(source.photo));
+      if (!styled) continue;
+      categoryImages[handle] = { url: styled.url, altText: styled.altText ?? null };
+      break;
+    }
+  }
+
+  return { trending, newArrivals, categoryImages, index: collectionIndex };
 }
 
 function Hero({ collection, image }: { collection: CollectionRef | undefined; image: EditorialImage }) {
@@ -453,7 +470,7 @@ function SplitFeature({
 }
 
 export default async function HomePage() {
-  const { trending, newArrivals, index } = await loadHomePage();
+  const { trending, newArrivals, categoryImages, index } = await loadHomePage();
   const { byHandle } = index;
 
   const rooms = pickCollections(byHandle, ROOM_HANDLES);
@@ -480,65 +497,41 @@ export default async function HomePage() {
   // first entry is the tab that opens by default.
   const browseTabs: HomeTab[] = [];
 
-  if (rooms.length > 0) {
+  if (categories.length > 0) {
     browseTabs.push({
-      id: "rooms",
-      label: "All spaces",
-      heading: "Shop by room",
+      id: "categories",
+      label: "All categories",
+      heading: "Shop by category",
       panel: (
-        <>
-          {/* Mobile: every room fits on screen at once — a two-column mosaic
-              with the first tile spanning the full width, as in the design. No
-              horizontal scrolling to reach the rest. */}
-          <div className="px-margin md:hidden">
-            <ul role="list" className="grid grid-cols-2 gap-3">
-              {rooms.map((room, roomIndex) => (
-                <li
-                  key={`m-room-${room.handle}`}
-                  className={roomIndex === 0 ? "col-span-2" : undefined}
-                >
-                  <CollectionTile
-                    collection={room}
-                    heightClass={roomIndex === 0 ? "h-[190px]" : "h-[150px]"}
-                    sizes={roomIndex === 0 ? "100vw" : "50vw"}
-                  />
-                </li>
-              ))}
-            </ul>
-            <div className="mt-7 flex justify-center">
-              <Link
-                href="/collections"
-                className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                View all rooms
-                <Arrow size={16} />
-              </Link>
-            </div>
+        <div className="max-w-page px-margin mx-auto">
+          {/* Two across on a phone, five from `md` — ten categories land as two
+              even rows rather than a ragged mosaic. */}
+          <ul
+            role="list"
+            className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-5 md:gap-x-6 md:gap-y-10"
+          >
+            {categories.map((category, categoryIndex) => (
+              <li key={`cat-${category.handle}`}>
+                <CategoryTile
+                  collection={{
+                    ...category,
+                    image: categoryImages[category.handle] ?? category.image,
+                  }}
+                  priority={categoryIndex < 5}
+                />
+              </li>
+            ))}
+          </ul>
+          <div className="mt-9 flex justify-center">
+            <Link
+              href="/collections"
+              className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              View all categories
+              <Arrow size={16} />
+            </Link>
           </div>
-
-          <div className="max-w-page px-margin mx-auto hidden md:block">
-            <ul role="list" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
-              {rooms.map((room, roomIndex) => (
-                <li key={room.handle} className={ROOM_SPANS[roomIndex] ?? "lg:col-span-4"}>
-                  <CollectionTile
-                    collection={room}
-                    heightClass="h-[320px] md:h-[460px] min-[90rem]:h-[560px]"
-                    sizes="(min-width: 1024px) 40vw, (min-width: 640px) 50vw, 100vw"
-                  />
-                </li>
-              ))}
-            </ul>
-            <div className="mt-9 flex justify-center">
-              <Link
-                href="/collections"
-                className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                View all rooms
-                <Arrow size={16} />
-              </Link>
-            </div>
-          </div>
-        </>
+        </div>
       ),
     });
   }
@@ -670,6 +663,36 @@ export default async function HomePage() {
           reachable without scrolling past it. */}
       {browseTabs.length > 0 ? <HomeTabs tabs={browseTabs} /> : null}
 
+      {/* New arrivals — newest listed first, straight after the browse block. */}
+      {newArrivals.length > 0 ? (
+        <section
+          data-reveal
+          className="pt-16 md:pt-24"
+          aria-label="New arrivals"
+        >
+          <ProductRail title="New arrivals">
+            {newArrivals.map((product, productIndex) => (
+              <li key={product.id} className="w-[62vw] shrink-0 sm:w-[308px]">
+                <ProductCard
+                  product={product}
+                  priority={productIndex < 2}
+                  sizes="(min-width: 640px) 308px, 62vw"
+                />
+              </li>
+            ))}
+          </ProductRail>
+          <div className="mt-9 flex justify-center">
+            <Link
+              href={collectionHref("shop-all")}
+              className="text-walnut-700 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              View all pieces
+              <Arrow size={16} />
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
       <div className="mt-20 md:mt-28">
         <SplitFeature
           image={EDITORIAL_IMAGES.bandLook}
@@ -685,42 +708,6 @@ export default async function HomePage() {
         />
       </div>
 
-      {/* New arrivals — newest listed first, on the brown ground so it breaks
-          up the two light sections either side of it.
-
-          The cards carry no tone of their own: they set their type with
-          `text-on-surface` / `text-sand-600`, which read the tokens. Rebinding
-          those two on the section flips every card to light type without a
-          second styling path through ProductCard. */}
-      {newArrivals.length > 0 ? (
-        <section
-          data-reveal
-          className="bg-walnut-900 mt-20 py-16 [--color-on-surface:#f6efe6] [--color-sand-600:#c3b6a4] md:mt-28 md:py-24"
-          aria-label="New arrivals"
-        >
-          <ProductRail title="New arrivals" tone="dark">
-            {newArrivals.map((product, productIndex) => (
-              <li key={product.id} className="w-[62vw] shrink-0 sm:w-[308px]">
-                <ProductCard
-                  product={product}
-                  priority={productIndex < 2}
-                  sizes="(min-width: 640px) 308px, 62vw"
-                />
-              </li>
-            ))}
-          </ProductRail>
-          <div className="mt-9 flex justify-center">
-            <Link
-              href={collectionHref("shop-all")}
-              className="text-walnut-300 focus-visible:outline-accent inline-flex items-center gap-2 text-[13px] tracking-[0.1em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              View all pieces
-              <Arrow size={16} />
-            </Link>
-          </div>
-        </section>
-      ) : null}
-
       {/* A photograph between the two brown sections, so the run of them does
           not read as one long band. */}
       <MessageBand
@@ -733,43 +720,43 @@ export default async function HomePage() {
         }}
       />
 
-      {/* Shop by category — the chip row that used to be a browse tab, moved
-          onto the brown ground the collection mosaic used to hold. */}
-      {categories.length > 0 ? (
-        <section className="bg-walnut-900" aria-labelledby="categories-heading">
+      {/* Shop by room — the five spaces on the brown ground, as circle chips.
+          The room photographs are scenes, so they hold up cropped to a circle
+          where a product cut-out would not. */}
+      {rooms.length > 0 ? (
+        <section className="bg-walnut-900" aria-labelledby="rooms-heading">
           <div className="max-w-page px-margin mx-auto py-14 md:py-22">
             <div data-reveal>
               {/* Stacked on mobile — side by side the heading wraps and the link
                   gets squeezed against it. */}
               <div className="mb-9 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-8 md:mb-12">
                 <div>
-                  <h2 id="categories-heading" className="type-display m-0 text-[#f6efe6]">
-                    Shop by category
+                  <h2 id="rooms-heading" className="type-display m-0 text-[#f6efe6]">
+                    Shop by room
                   </h2>
                   <p className="mt-3.5 max-w-[470px] text-[14.5px] leading-relaxed text-[#f6efe6]/65">
-                    We group pieces the way people actually shop — by the feeling of a room, the
-                    hand of a fabric, the grain of a timber. Start anywhere.
+                    Every space we furnish, from the room you sit in to the one you wake up in.
+                    Start where you are.
                   </p>
                 </div>
                 <Link
                   href="/collections"
                   className="text-walnut-300 focus-visible:outline-accent inline-flex shrink-0 items-center gap-2 text-[13px] tracking-[0.1em] uppercase no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
-                  All categories
+                  All rooms
                   <Arrow size={16} />
                 </Link>
               </div>
 
-              {/* Two rows of five from `sm` up, so the circles are large enough
-                  to read as photographs. Capped per chip — five across a 1440p
-                  measure would otherwise give circles the size of a room tile. */}
+              {/* All five across from `sm` up. Capped per chip — five across a
+                  1440p measure would otherwise give circles the size of tiles. */}
               <ul
                 role="list"
                 className="grid grid-cols-3 gap-x-6 gap-y-9 sm:grid-cols-5 md:gap-x-9 md:gap-y-12"
               >
-                {categories.map((category) => (
-                  <li key={`cat-${category.handle}`} className="mx-auto w-full max-w-[260px]">
-                    <CategoryChip collection={category} tone="dark" />
+                {rooms.map((room) => (
+                  <li key={`room-${room.handle}`} className="mx-auto w-full max-w-[260px]">
+                    <CircleChip collection={room} tone="dark" />
                   </li>
                 ))}
               </ul>

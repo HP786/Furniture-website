@@ -2,8 +2,11 @@ import { getSelectedProductOptions, gql } from "@shopify/hydrogen";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { PRODUCT_CARD_FRAGMENT } from "../../lib/product-card-fragment";
+import { PRODUCT_CARD_FRAGMENT, type ProductCardData } from "../../lib/product-card-fragment";
 import { ProductDetails } from "../../components/ProductDetails";
+import { pieceKey } from "../../lib/product-family";
+import { specFromTags } from "../../lib/product-spec";
+import { typeFromTags } from "../../lib/swatches";
 import { getStorefrontClient } from "../../lib/storefront";
 import { toURLSearchParams, type NextSearchParams } from "../../lib/url";
 
@@ -130,6 +133,14 @@ export const PRODUCT_QUERY = gql(
       ) {
         ...ProductCard
       }
+      # Fallback pool for "Pair it with": the pieces that go with this one are
+      # picked from here by type when Search & Discovery has no complementary
+      # products configured, which is the case on a fresh store.
+      pairPool: products(first: 60, sortKey: BEST_SELLING) {
+        nodes {
+          ...ProductCard
+        }
+      }
     }
   `,
   [PRODUCT_VARIANT_FRAGMENT, PRODUCT_CARD_FRAGMENT],
@@ -161,16 +172,51 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   };
 }
 
+/**
+ * What goes with this piece: a coffee table and a side table beside a sofa, an
+ * ottoman beside an armchair. Types come from the piece's own spec, in its
+ * order of preference, one product per type so the row is four different
+ * things rather than four coffee tables.
+ */
+function pairWith(product: NonNullable<Awaited<ReturnType<typeof loadProduct>>>["product"], pool: ProductCardData[]) {
+  const tags = product?.tags ?? [];
+  const spec = specFromTags(tags);
+  if (!spec || !product) return [];
+
+  const own = pieceKey(product.title, tags);
+  const picked: ProductCardData[] = [];
+
+  for (const wanted of spec.pairsWith) {
+    const match = pool.find((candidate) => {
+      const candidateTags = candidate.tags ?? [];
+      if (typeFromTags(candidateTags) !== wanted) return false;
+      if (pieceKey(candidate.title, candidateTags) === own) return false;
+      return !picked.some(
+        (already) => pieceKey(already.title, already.tags ?? []) === pieceKey(candidate.title, candidateTags),
+      );
+    });
+    if (match) picked.push(match);
+  }
+
+  return picked;
+}
+
 export default async function ProductPage({ params, searchParams }: ProductPageProps) {
   const { handle } = await params;
   const data = await loadProduct(handle, await searchParams);
   if (!data?.product) notFound();
 
+  const configured = data.complementaryProducts ?? [];
+  const pairs =
+    configured.length > 0
+      ? configured
+      : pairWith(data.product, (data.pairPool?.nodes ?? []) as ProductCardData[]);
+
   return (
     <ProductDetails
       product={data.product}
       relatedProducts={data.relatedProducts ?? []}
-      complementaryProducts={data.complementaryProducts ?? []}
+      complementaryProducts={pairs}
     />
   );
 }
