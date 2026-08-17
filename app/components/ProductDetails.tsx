@@ -13,7 +13,7 @@ import { formatPercentOff, formatPrice } from "../lib/money";
 import { dimensionsFromTags, faqsForType, specFromTags } from "../lib/product-spec";
 import { roomFromTags } from "../lib/rooms";
 import { subtitleFromTags, swatchFromTags, typeFromTags } from "../lib/swatches";
-import { useColourways, usePieceOptions } from "./FamilyProvider";
+import { usePieceOptions } from "./FamilyProvider";
 import type { PRODUCT_QUERY } from "../products/[handle]/page";
 import { ProductViewedTracker } from "./AnalyticsTrackers";
 import { ProductCard } from "./ProductCard";
@@ -974,7 +974,16 @@ function StickyBuyBar({ product }: { product: ProductData }) {
   const [shown, setShown] = useState(false);
   const sentinel = useRef<HTMLDivElement>(null);
   const addable = canAddToCart(product, options);
-  const colourways = useColourways(product.title);
+  const colourways = useMemo(() => {
+    const colours = colourMapFrom(product);
+    const option = product.options.find((item) => /colou?r|finish|fabric/i.test(item.name));
+    const current = colourOf(selectedVariant);
+    return (option?.optionValues ?? []).map((value) => ({
+      name: value.name,
+      hex: colours.get(value.name.toLowerCase())?.hex ?? null,
+      selected: value.name === current,
+    }));
+  }, [product, selectedVariant]);
 
   useEffect(() => {
     const node = sentinel.current;
@@ -1021,22 +1030,22 @@ function StickyBuyBar({ product }: { product: ProductData }) {
             />
           ) : null}
 
+          {/* The colours this piece comes in, as a reminder rather than a
+              control — the picker above is where they are chosen, and the
+              selected one is ringed. */}
           {colourways.length > 1 ? (
             <ul role="list" className="hidden shrink-0 items-center gap-1.5 lg:flex">
               {colourways.slice(0, 8).map((colourway) => (
-                <li key={colourway.handle}>
-                  <Link
-                    href={`/products/${colourway.handle}`}
-                    aria-label={colourway.title}
-                    title={colourway.colorName ?? colourway.title}
-                    tabIndex={shown ? 0 : -1}
+                <li key={colourway.name}>
+                  <span
+                    aria-hidden="true"
+                    title={colourway.name}
                     className="border-border block size-[19px] rounded-full border"
                     style={{
                       background: colourway.hex ?? "var(--color-surface-secondary)",
-                      boxShadow:
-                        colourway.handle === product.handle
-                          ? "0 0 0 2px var(--color-surface), 0 0 0 3.5px var(--color-interactive)"
-                          : undefined,
+                      boxShadow: colourway.selected
+                        ? "0 0 0 2px var(--color-surface), 0 0 0 3.5px var(--color-interactive)"
+                        : undefined,
                     }}
                   />
                 </li>
@@ -1288,15 +1297,12 @@ function ProductInfo({
   const spec = specFromTags(tags);
   const price = selectedVariant?.price ?? product.priceRange.minVariantPrice;
 
-  // A product with its own Colour option carries its colourways as variants,
-  // and the variant picker below is the one place they are chosen. The
-  // sibling-product dots are for the pieces that have not been merged yet, so
-  // the two can never both be on screen.
+  // Colourways are variants of one product now, chosen in the variant picker
+  // below. This only decides whether the tag-derived finish chip is worth
+  // showing — a piece that comes one way only still has one.
   const hasColourOption = product.options.some(
     (option) => /colou?r|finish|fabric/i.test(option.name) && option.optionValues.length > 1,
   );
-  const siblingColourways = useColourways(product.title);
-  const colourways = hasColourOption ? [] : siblingColourways;
   // The finish shown beside the title: the chosen variant's, falling back to
   // the tag for the products that are still one-colour-per-product.
   const finish = colourOf(selectedVariant) ?? swatch?.name ?? null;
@@ -1324,39 +1330,10 @@ function ProductInfo({
       </div>
       <span className="sr-only" aria-live="polite" id="inventory-status" />
 
-      {/* Colourways. Each finish is its own product in this catalogue, so the
-          swatches are links between sibling products rather than variant
-          buttons — same behaviour as the design, no catalogue restructuring. */}
-      {colourways.length > 1 ? (
-        <div className="mt-6">
-          <p className="text-sand-700 mb-3 text-[13.5px]">
-            {spec?.finishLabel ?? "Fabric"} : <span className="text-on-surface">{swatch?.name ?? ""}</span>
-          </p>
-          <ul role="list" className="flex flex-wrap gap-3">
-            {colourways.map((colourway) => {
-              const isCurrent = colourway.handle === product.handle;
-              return (
-                <li key={colourway.handle}>
-                  <Link
-                    href={`/products/${colourway.handle}`}
-                    aria-current={isCurrent ? "page" : undefined}
-                    aria-label={colourway.title}
-                    title={colourway.colorName ?? colourway.title}
-                    className="border-border focus-visible:outline-accent block size-11 rounded-full border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-transform"
-                    style={{
-                      background: colourway.hex ?? "var(--color-surface-secondary)",
-                      boxShadow: isCurrent
-                        ? "0 0 0 3px var(--color-surface), 0 0 0 4.5px var(--color-interactive)"
-                        : undefined,
-                      transform: isCurrent ? "scale(1.06)" : undefined,
-                    }}
-                  />
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ) : swatch && !hasColourOption ? (
+      {/* The finish, for a piece that only comes one way. Everything that comes
+          in more than one is a Colour option now, chosen in the variant picker
+          further down, so there is nothing to show here. */}
+      {swatch && !hasColourOption ? (
         <div className="mt-6">
           <p className="text-sand-700 mb-3 text-[13.5px]">
             {spec?.finishLabel ?? "Fabric"} : <span className="text-on-surface">{swatch.name}</span>

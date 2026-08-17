@@ -20,6 +20,41 @@ export const PRODUCT_CARD_FRAGMENT = gql(`
       id
       availableForSale
     }
+    # The colourways this piece comes in, as Shopify holds them: option values
+    # for the names, the linked colour metaobject for the chips, and each
+    # variant's own photograph so hovering a chip previews that finish.
+    options {
+      name
+      optionValues {
+        name
+      }
+    }
+    variants(first: 10) {
+      nodes {
+        id
+        title
+        availableForSale
+        selectedOptions {
+          name
+          value
+        }
+        image {
+          url
+        }
+      }
+    }
+    colourway: metafield(namespace: "custom", key: "colour_pattern") {
+      references(first: 20) {
+        nodes {
+          ... on Metaobject {
+            fields {
+              key
+              value
+            }
+          }
+        }
+      }
+    }
     featuredImage {
       url
       altText

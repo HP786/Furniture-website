@@ -1,8 +1,6 @@
 import { getSelectedProductOptions, gql } from "@shopify/hydrogen";
 import type { Metadata } from "next";
-import { notFound, permanentRedirect } from "next/navigation";
-
-import { mergedDestination } from "../../lib/merged-handles";
+import { notFound } from "next/navigation";
 
 import { PRODUCT_CARD_FRAGMENT, type ProductCardData } from "../../lib/product-card-fragment";
 import { ProductDetails } from "../../components/ProductDetails";
@@ -235,13 +233,7 @@ function pairWith(product: NonNullable<Awaited<ReturnType<typeof loadProduct>>>[
 export default async function ProductPage({ params, searchParams }: ProductPageProps) {
   const { handle } = await params;
   const data = await loadProduct(handle, await searchParams);
-  if (!data?.product) {
-    // A colourway that has been merged into another product keeps working:
-    // the old link redirects onto the survivor with that colour selected.
-    const destination = mergedDestination(handle);
-    if (destination) permanentRedirect(destination);
-    notFound();
-  }
+  if (!data?.product) notFound();
 
   const configured = data.complementaryProducts ?? [];
   const pairs =

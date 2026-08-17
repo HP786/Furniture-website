@@ -8,12 +8,46 @@ import { formatPrice } from "../lib/money";
 import type { ProductCardData } from "../lib/product-card-fragment";
 import { roomFromTags } from "../lib/rooms";
 import { subtitleFromTags, swatchFromTags } from "../lib/swatches";
-import { useColourways } from "./FamilyProvider";
 import { RoomTag } from "./RoomTag";
 import { SaveButton } from "./SaveButton";
 
 function moneyGreater(a: { amount: string } | null | undefined, b: { amount: string }) {
   return Number.parseFloat(a?.amount ?? "0") > Number.parseFloat(b.amount);
+}
+
+const COLOUR_OPTION = /colou?r|finish|fabric/i;
+
+/**
+ * The colourways on a card: one chip per value of the product's Colour option,
+ * coloured from the linked Shopify colour metaobject and pointing at that
+ * variant. A piece that comes one way only has no option and no chips.
+ */
+function colourwaysOf(product: ProductCardData) {
+  const option = product.options.find((item) => COLOUR_OPTION.test(item.name));
+  if (!option || option.optionValues.length < 2) return [];
+
+  const hexes = new Map<string, string>();
+  for (const node of product.colourway?.references?.nodes ?? []) {
+    if (!node || !("fields" in node)) continue;
+    const fields = new Map(node.fields.map((field) => [field.key, field.value]));
+    const label = fields.get("label");
+    const colour = fields.get("color");
+    if (label && colour) hexes.set(label.toLowerCase(), colour);
+  }
+
+  return option.optionValues.map((value) => {
+    const variant = product.variants.nodes.find((node) =>
+      node.selectedOptions.some(
+        (selected) => COLOUR_OPTION.test(selected.name) && selected.value === value.name,
+      ),
+    );
+    return {
+      name: value.name,
+      hex: hexes.get(value.name.toLowerCase()) ?? null,
+      imageUrl: variant?.image?.url ?? null,
+      href: `/products/${product.handle}?${new URLSearchParams({ [option.name]: value.name })}`,
+    };
+  });
 }
 
 export function ProductCard({
@@ -29,9 +63,9 @@ export function ProductCard({
   sizes?: string;
   aspectClass?: string;
 }) {
-  const colourways = useColourways(product.title);
-  // Hovering a swatch previews that colourway in place; the swatch itself is a
-  // link, so clicking still lands on that colourway's own product page.
+  const colourways = colourwaysOf(product);
+  // Hovering a chip previews that finish in place; the chip is a link, so
+  // clicking lands on the product with that colour already selected.
   const [preview, setPreview] = useState<string | null>(null);
 
   const ownImage = product.featuredImage ?? product.images.nodes[0] ?? null;
@@ -120,29 +154,21 @@ export function ProductCard({
 
       {colourways.length > 1 ? (
         <ul role="list" className="relative z-10 flex h-[19px] items-center gap-2">
-          {colourways.map((colourway) => {
-            const isCurrent = colourway.handle === product.handle;
-            return (
-              <li key={colourway.handle}>
-                <Link
-                  href={`/products/${colourway.handle}`}
-                  onMouseEnter={() => setPreview(colourway.imageUrl)}
-                  onFocus={() => setPreview(colourway.imageUrl)}
-                  onMouseLeave={() => setPreview(null)}
-                  onBlur={() => setPreview(null)}
-                  aria-label={`${colourway.title}${isCurrent ? " (shown)" : ""}`}
-                  title={colourway.colorName ?? colourway.title}
-                  className="border-border focus-visible:outline-accent block size-[17px] rounded-full border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                  style={{
-                    background: colourway.hex ?? "var(--color-surface-secondary)",
-                    boxShadow: isCurrent
-                      ? "0 0 0 2px var(--color-surface), 0 0 0 3.5px var(--color-interactive)"
-                      : undefined,
-                  }}
-                />
-              </li>
-            );
-          })}
+          {colourways.map((colourway) => (
+            <li key={colourway.name}>
+              <Link
+                href={colourway.href}
+                onMouseEnter={() => setPreview(colourway.imageUrl)}
+                onFocus={() => setPreview(colourway.imageUrl)}
+                onMouseLeave={() => setPreview(null)}
+                onBlur={() => setPreview(null)}
+                aria-label={`${product.title} in ${colourway.name}`}
+                title={colourway.name}
+                className="border-border focus-visible:outline-accent block size-[17px] rounded-full border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                style={{ background: colourway.hex ?? "var(--color-surface-secondary)" }}
+              />
+            </li>
+          ))}
         </ul>
       ) : swatch ? (
         <div className="flex h-[19px] items-center gap-2">
