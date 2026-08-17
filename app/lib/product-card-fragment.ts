@@ -14,6 +14,12 @@ export const PRODUCT_CARD_FRAGMENT = gql(`
     title
     tags
     availableForSale
+    # Enough to add the piece straight to the cart from a card — the "Pairs
+    # well with" tile on the product page buys without a detour to the PDP.
+    selectedOrFirstAvailableVariant {
+      id
+      availableForSale
+    }
     featuredImage {
       url
       altText
