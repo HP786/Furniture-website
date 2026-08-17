@@ -52,6 +52,44 @@ function swatchImageUrl(value: ProductData["options"][number]["optionValues"][nu
 }
 
 /**
+ * Colour name to hex, read off Shopify's own colour metaobject.
+ *
+ * Shopify populates `optionValue.swatch` only for options linked to the
+ * taxonomy colour field, which is constrained to apparel categories — a sofa
+ * cannot use it. So the colours are read one hop further along, from the
+ * metaobject the option values are linked to, and matched by label. Merchants
+ * still edit them in Shopify; nothing about the colour lives in this codebase.
+ */
+type Colourway = { hex: string | null; image: string | null };
+
+function colourMapFrom(product: ProductData): Map<string, Colourway> {
+  const map = new Map<string, Colourway>();
+  for (const node of product.colourway?.references?.nodes ?? []) {
+    if (!node || !("fields" in node)) continue;
+    let label: string | null = null;
+    let hex: string | null = null;
+    let image: string | null = null;
+
+    for (const field of node.fields) {
+      if (field.key === "label") label = field.value;
+      if (field.key === "color") hex = field.value;
+      if (field.key === "image" && field.reference && "image" in field.reference) {
+        image = field.reference.image?.url ?? null;
+      }
+    }
+
+    if (label && (hex || image)) map.set(label.toLowerCase(), { hex, image });
+  }
+  return map;
+}
+
+/** The colour this variant is, from its own option values. */
+function colourOf(variant: VariantData | null): string | null {
+  const option = variant?.selectedOptions.find((item) => /colou?r|finish|fabric/i.test(item.name));
+  return option?.value ?? null;
+}
+
+/**
  * The +/− an accordion header carries: two bars, the upright one collapsing on
  * open. Cheaper than swapping icons and it animates, which a swap cannot.
  */
@@ -110,22 +148,34 @@ function ProductGallery({
   const trackRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
 
+  // The order is the product's own, and it stays put as the colour changes —
+  // the gallery scrolls to the chosen variant's photo rather than reshuffling
+  // under the reader, which would move every other slide as a side effect.
   const images = useMemo(() => {
     const seen = new Set<string>();
-    return [selectedVariant?.image, product.featuredImage, ...product.images.nodes].flatMap(
-      (image) => {
-        if (!image?.url || seen.has(image.url)) return [];
-        seen.add(image.url);
-        return [image];
-      },
-    );
-  }, [product, selectedVariant]);
+    return [product.featuredImage, ...product.images.nodes].flatMap((image) => {
+      if (!image?.url || seen.has(image.url)) return [];
+      seen.add(image.url);
+      return [image];
+    });
+  }, [product]);
 
   const onScroll = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
     setActive(Math.round(track.scrollLeft / Math.max(1, track.clientWidth)));
   }, []);
+
+  // Choosing a colour moves the gallery to that colour's photograph. Shopify
+  // holds one image per variant; this finds it in the product's own order.
+  const variantImageUrl = selectedVariant?.image?.url ?? null;
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || !variantImageUrl) return;
+    const index = images.findIndex((image) => image.url === variantImageUrl);
+    if (index < 0) return;
+    track.scrollTo({ left: index * track.clientWidth, behavior: "smooth" });
+  }, [variantImageUrl, images]);
 
   const goTo = useCallback(
     (index: number) => {
@@ -348,6 +398,7 @@ function VariantSelector({ product }: { product: ProductData }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const visibleOptions = options.filter((option) => !isPlaceholderOption(option));
+  const colours = useMemo(() => colourMapFrom(product), [product]);
 
   if (visibleOptions.length === 0) {
     // The form still needs the pathname for its return-to redirect even when
@@ -360,10 +411,13 @@ function VariantSelector({ product }: { product: ProductData }) {
       {visibleOptions.map((option) => {
         const current = selectedOptionValue(option);
         const productOption = product.options.find((item) => item.name === option.name);
-        const isColor = /colou?r/i.test(option.name);
-        const hasSwatches = productOption?.optionValues.some(
-          (value) => value.swatch?.color || swatchImageUrl(value),
-        );
+        const isColor = /colou?r|finish|fabric/i.test(option.name);
+        // Shopify's own swatch field where it is populated, otherwise the
+        // colour metaobject the option value is linked to — see `colourMapFrom`.
+        const hasSwatches =
+          productOption?.optionValues.some(
+            (value) => value.swatch?.color || swatchImageUrl(value),
+          ) || option.values.some((value) => colours.has(value.name.toLowerCase()));
 
         return (
           <fieldset key={option.name} className="space-y-2">
@@ -398,7 +452,10 @@ function VariantSelector({ product }: { product: ProductData }) {
                 }
 
                 if (isColor && hasSwatches) {
-                  const imageUrl = productValue ? swatchImageUrl(productValue) : null;
+                  const colourway = colours.get(value.name.toLowerCase());
+                  const imageUrl =
+                    (productValue ? swatchImageUrl(productValue) : null) ?? colourway?.image ?? null;
+                  const colourHex = productValue?.swatch?.color ?? colourway?.hex ?? undefined;
                   return (
                     <button
                       key={`${option.name}:${value.name}`}
@@ -411,11 +468,17 @@ function VariantSelector({ product }: { product: ProductData }) {
                       className={`min-h-touch-target min-w-touch-target relative inline-flex cursor-pointer items-center justify-center motion-safe:transition-transform motion-safe:active:scale-[0.93] ${commonClass}`}
                     >
                       <span
-                        className={`swatch-md relative inline-flex items-center justify-center overflow-hidden rounded-full border-2 ring-offset-2 ${value.selected ? "border-interactive" : "border-border"}`}
+                        className="border-border relative inline-flex size-11 items-center justify-center overflow-hidden rounded-full border motion-safe:transition-transform"
                         style={{
-                          backgroundColor: productValue?.swatch?.color ?? undefined,
+                          backgroundColor: colourHex,
                           backgroundImage: imageUrl ? `url(${imageUrl})` : undefined,
                           backgroundSize: imageUrl ? "cover" : undefined,
+                          // The selected chip is ringed rather than recoloured,
+                          // the same treatment the sibling-product dots use.
+                          boxShadow: value.selected
+                            ? "0 0 0 3px var(--color-surface), 0 0 0 4.5px var(--color-interactive)"
+                            : undefined,
+                          transform: value.selected ? "scale(1.06)" : undefined,
                         }}
                         aria-hidden="true"
                       >
@@ -1221,10 +1284,22 @@ function ProductInfo({
   const swatch = swatchFromTags(tags);
   const subtitle = subtitleFromTags(tags);
   const room = roomFromTags(tags);
-  const colourways = useColourways(product.title);
   const sizes = usePieceOptions(product.title, tags);
   const spec = specFromTags(tags);
   const price = selectedVariant?.price ?? product.priceRange.minVariantPrice;
+
+  // A product with its own Colour option carries its colourways as variants,
+  // and the variant picker below is the one place they are chosen. The
+  // sibling-product dots are for the pieces that have not been merged yet, so
+  // the two can never both be on screen.
+  const hasColourOption = product.options.some(
+    (option) => /colou?r|finish|fabric/i.test(option.name) && option.optionValues.length > 1,
+  );
+  const siblingColourways = useColourways(product.title);
+  const colourways = hasColourOption ? [] : siblingColourways;
+  // The finish shown beside the title: the chosen variant's, falling back to
+  // the tag for the products that are still one-colour-per-product.
+  const finish = colourOf(selectedVariant) ?? swatch?.name ?? null;
 
   return (
     <div className="flex flex-col gap-0">
@@ -1237,7 +1312,15 @@ function ProductInfo({
         <h1 className="font-heading text-[32px] leading-[1.06] font-light tracking-[-0.025em] text-pretty md:text-[46px]">
           {product.title}
         </h1>
-        {subtitle ? <p className="text-sand-600 mt-2.5 text-[15px]">{subtitle}</p> : null}
+        {/* "Smoke Oak, Coffee Table" — the finish first, and it follows the
+            colour you pick rather than sitting on the product's own tags. */}
+        {finish || subtitle ? (
+          <p className="text-sand-600 mt-2.5 text-[15px]">
+            {[finish, spec?.plural.replace(/s$/, "") ?? null]
+              .filter((part): part is string => Boolean(part))
+              .join(", ") || subtitle}
+          </p>
+        ) : null}
       </div>
       <span className="sr-only" aria-live="polite" id="inventory-status" />
 
@@ -1273,7 +1356,7 @@ function ProductInfo({
             })}
           </ul>
         </div>
-      ) : swatch ? (
+      ) : swatch && !hasColourOption ? (
         <div className="mt-6">
           <p className="text-sand-700 mb-3 text-[13.5px]">
             {spec?.finishLabel ?? "Fabric"} : <span className="text-on-surface">{swatch.name}</span>

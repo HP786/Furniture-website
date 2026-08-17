@@ -1,6 +1,8 @@
 import { getSelectedProductOptions, gql } from "@shopify/hydrogen";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+
+import { mergedDestination } from "../../lib/merged-handles";
 
 import { PRODUCT_CARD_FRAGMENT, type ProductCardData } from "../../lib/product-card-fragment";
 import { ProductDetails } from "../../components/ProductDetails";
@@ -60,6 +62,35 @@ export const PRODUCT_QUERY = gql(
         seo {
           title
           description
+        }
+        # Colourways, as Shopify holds them: the product's Colour option values
+        # are linked to entries in Shopify's own colour metaobject, and each
+        # entry carries the label and the hex. Matched to option values by
+        # label, since the Storefront API does not expose the link itself.
+        colourway: metafield(namespace: "custom", key: "colour_pattern") {
+          references(first: 20) {
+            nodes {
+              ... on Metaobject {
+                id
+                handle
+                fields {
+                  key
+                  value
+                  # A merchant can set a photographed swatch on the colour
+                  # entry — a timber grain, a fabric weave. Where they have,
+                  # the chip shows the photo instead of the flat hex.
+                  reference {
+                    ... on MediaImage {
+                      image {
+                        url
+                        altText
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
         featuredImage {
           id
@@ -204,7 +235,13 @@ function pairWith(product: NonNullable<Awaited<ReturnType<typeof loadProduct>>>[
 export default async function ProductPage({ params, searchParams }: ProductPageProps) {
   const { handle } = await params;
   const data = await loadProduct(handle, await searchParams);
-  if (!data?.product) notFound();
+  if (!data?.product) {
+    // A colourway that has been merged into another product keeps working:
+    // the old link redirects onto the survivor with that colour selected.
+    const destination = mergedDestination(handle);
+    if (destination) permanentRedirect(destination);
+    notFound();
+  }
 
   const configured = data.complementaryProducts ?? [];
   const pairs =
