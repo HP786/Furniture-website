@@ -3,7 +3,7 @@
 import { CollectionProvider, useCollection } from "@shopify/hydrogen/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import type { CollectionPageData } from "../lib/collection";
 import { shopifyImageUrl, srcSetFor } from "../lib/image";
@@ -158,8 +158,12 @@ function CollectionContent({
   up,
   tiles,
   showActive,
+  children,
 }: {
   data: CollectionPageData;
+  /** Rendered under the grid. Passed from the server page, so the copy and the
+   *  questions down there never reach the browser as a bundle. */
+  children?: ReactNode;
 } & BrowseProps) {
   const state = useCollection();
   const basePath = `/collections/${data.collection.handle}`;
@@ -258,6 +262,7 @@ function CollectionContent({
           </div>
         </div>
       </div>
+      {children}
       <FilterDrawer id={FILTER_DRAWER_ID} availableFilters={data.availableFilters} />
     </main>
   );
@@ -269,8 +274,10 @@ export function CollectionPageClient({
   up,
   tiles,
   showActive,
+  children,
 }: {
   data: CollectionPageData;
+  children?: ReactNode;
 } & BrowseProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -297,7 +304,9 @@ export function CollectionPageClient({
         up={up}
         tiles={tiles}
         showActive={showActive}
-      />
+      >
+        {children}
+      </CollectionContent>
     </CollectionProvider>
   );
 }

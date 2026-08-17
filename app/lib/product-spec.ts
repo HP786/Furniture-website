@@ -44,9 +44,10 @@ export type PieceSpec = {
 
 /**
  * Asked of everything we sell, so they are appended to each type's own list
- * rather than written out seven times.
+ * rather than written out seven times. Exported because the collection pages
+ * end on the same two questions — there is one delivery policy, not eight.
  */
-const SHARED_FAQS: Faq[] = [
+export const SHARED_FAQS: Faq[] = [
   {
     question: "Do you deliver to all states in Australia?",
     answer:

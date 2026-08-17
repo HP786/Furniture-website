@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { CollectionEndMatter } from "../../components/CollectionEndMatter";
 import { CollectionPageClient } from "../../components/CollectionPageClient";
 import { loadCollectionPage } from "../../lib/collection";
 import { loadCollectionIndex } from "../../lib/collection-index";
@@ -65,6 +66,8 @@ export default async function CollectionPage({ params, searchParams }: Collectio
       up={(row.up ? index.byHandle.get(row.up) : null) ?? null}
       tiles={pickCollections(index.byHandle, row.tiles)}
       showActive={row.isSiblingRow}
-    />
+    >
+      <CollectionEndMatter handle={handle} />
+    </CollectionPageClient>
   );
 }

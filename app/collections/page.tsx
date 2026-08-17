@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CollectionCard } from "../components/CollectionCard";
+import { CollectionEndMatter } from "../components/CollectionEndMatter";
 import { loadCollectionsPage } from "../lib/collections";
 import { toJsonLd } from "../lib/json-ld";
 import { toURLSearchParams, type NextSearchParams } from "../lib/url";
@@ -94,6 +95,10 @@ export default async function CollectionsPage({ searchParams }: CollectionsPageP
           </div>
         )}
       </div>
+
+      {/* The index is a collection page too, so it ends the same way — on the
+          store's own copy and the questions asked of everything. */}
+      <CollectionEndMatter handle="shop-all" />
     </main>
   );
 }
