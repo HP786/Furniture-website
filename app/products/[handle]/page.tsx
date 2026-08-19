@@ -61,35 +61,6 @@ export const PRODUCT_QUERY = gql(
           title
           description
         }
-        # Colourways, as Shopify holds them: the product's Colour option values
-        # are linked to entries in Shopify's own colour metaobject, and each
-        # entry carries the label and the hex. Matched to option values by
-        # label, since the Storefront API does not expose the link itself.
-        colourway: metafield(namespace: "custom", key: "colour_pattern") {
-          references(first: 20) {
-            nodes {
-              ... on Metaobject {
-                id
-                handle
-                fields {
-                  key
-                  value
-                  # A merchant can set a photographed swatch on the colour
-                  # entry — a timber grain, a fabric weave. Where they have,
-                  # the chip shows the photo instead of the flat hex.
-                  reference {
-                    ... on MediaImage {
-                      image {
-                        url
-                        altText
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
         featuredImage {
           id
           url

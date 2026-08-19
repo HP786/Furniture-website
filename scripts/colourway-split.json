@@ -1,0 +1,301 @@
+{
+  "why": "These twelve families were merged into one product each with a Colour option, then split back out. Each entry recreates the products the catalogue had before the merge: one product per finish, with its own handle, price, SKU, stock and photographs. The site groups them by title (lib/product-family.ts) and the swatch row links between them.",
+  "sourceOfTruth": "Captured from the live store before the merge. Images are Shopify Files that still exist; look each one up by filename rather than by a versioned URL.",
+  "stockPerProduct": 50,
+  "families": [
+    {
+      "mergedHandle": "alfie-armchair",
+      "products": [
+        {
+          "handle": "alfie-armchair-boucle",
+          "title": "Alfie Armchair Bouclé",
+          "price": "714.00",
+          "sku": "ALFIE_ARMCHAIR_BOUCLE",
+          "images": ["AlfieBoucle2.jpg", "AlfieBoucle1.jpg"],
+          "tags": ["Category_Chair", "Color_Natural", "Material_Boucle", "Price_500to1500", "Room_LivingRoom", "Type_Armchair"],
+          "description": "A compact bouclé armchair with a softly rounded frame — ideal for smaller spaces that still want texture."
+        },
+        {
+          "handle": "alfie-armchair-haze",
+          "title": "Alfie Armchair Haze",
+          "price": "714.00",
+          "sku": "ALFIE_ARMCHAIR_HAZE",
+          "images": ["AlfieHaze2.jpg", "AlfieHaze1.jpg"],
+          "tags": ["Category_Chair", "Color_Haze", "Material_Fabric", "Price_500to1500", "Room_LivingRoom", "Type_Armchair"],
+          "description": "A compact armchair in haze-toned fabric with a softly rounded frame — ideal for smaller spaces."
+        }
+      ]
+    },
+    {
+      "mergedHandle": "bert-ottoman",
+      "products": [
+        {
+          "handle": "bert-ottoman-boucle",
+          "title": "Bert Ottoman Bouclé",
+          "price": "354.00",
+          "sku": "BERT_OTTOMAN_BOUCLE",
+          "images": ["BertBoucle1.jpg", "BertBoucle2.jpg"],
+          "tags": ["Category_Chair", "Color_Natural", "Material_Boucle", "Price_Under500", "Room_LivingRoom", "Type_Ottoman"],
+          "description": "A compact bouclé ottoman — a footrest, extra seat, or impromptu side table when topped with a tray."
+        },
+        {
+          "handle": "bert-ottoman-oyster",
+          "title": "Bert Ottoman Oyster",
+          "price": "329.40",
+          "sku": "BERT_OTTOMAN_OYSTER",
+          "images": ["BertOyster1.jpg", "BertOyster2.jpg"],
+          "tags": ["Category_Chair", "Color_Oyster", "Material_Fabric", "Price_Under500", "Room_LivingRoom", "Type_Ottoman"],
+          "description": "A compact ottoman in soft oyster fabric — a footrest, extra seat, or impromptu side table when topped with a tray."
+        }
+      ]
+    },
+    {
+      "mergedHandle": "clem-coffee-table",
+      "products": [
+        {
+          "handle": "clem-coffee-table-light-oak",
+          "title": "Clem Coffee Table Light Oak",
+          "price": "714.00",
+          "sku": "CLEM_COFFEE_TABLE_LIGHT_OAK",
+          "images": ["ClemCoffeeTable-LightOak_02", "ClemCoffeeTable_LightOak.jpg"],
+          "tags": ["Category_Table", "Color_Light_Oak", "Material_Light_Oak", "Price_500to1500", "Room_LivingRoom", "Type_Coffee_Table"],
+          "description": "A round coffee table in light oak with soft, sculptural legs. Compact enough for smaller living rooms without feeling delicate."
+        },
+        {
+          "handle": "clem-coffee-table-smoke-oak",
+          "title": "Clem Coffee Table Smoke Oak",
+          "price": "817.50",
+          "sku": "CLEM_COFFEE_TABLE_SMOKE_OAK",
+          "images": ["ClemCoffeeTable-SmokeOak_02", "ClemCoffeeTable_SmokeOak"],
+          "tags": ["Category_Table", "Color_Smoke_Oak", "Material_Smoke_Oak", "Price_500to1500", "Room_LivingRoom", "Type_Coffee_Table"],
+          "description": "A round coffee table in smoke oak with soft, sculptural legs. Compact enough for smaller living rooms without feeling delicate."
+        }
+      ]
+    },
+    {
+      "mergedHandle": "cove-side-table",
+      "products": [
+        {
+          "handle": "cove-side-table-clay",
+          "title": "Cove Side Table Clay",
+          "price": "270.00",
+          "sku": "COVE_SIDE_TABLE_CLAY",
+          "images": ["CoveSideTable-Clay_01.jpg", "CoveSideTable_Clay.jpg"],
+          "tags": ["Category_Table", "Color_Clay", "Material_Steel", "Price_Under500", "Room_LivingRoom", "Type_Side_Table"],
+          "description": "A compact side table in warm clay, simple and sturdy enough for everyday use beside a sofa or bed."
+        },
+        {
+          "handle": "cove-side-table-cream",
+          "title": "Cove Side Table Cream",
+          "price": "270.00",
+          "sku": "COVE_SIDE_TABLE_CREAM",
+          "images": ["CoveSideTable-Cream_01.jpg"],
+          "tags": ["Category_Table", "Color_Cream", "Material_Steel", "Price_Under500", "Room_LivingRoom", "Type_Side_Table"],
+          "description": "A compact side table in soft cream, simple and sturdy enough for everyday use beside a sofa or bed."
+        },
+        {
+          "handle": "cove-side-table-light-oak",
+          "title": "Cove Side Table Light Oak",
+          "price": "270.00",
+          "sku": "COVE_SIDE_TABLE_LIGHT_OAK",
+          "images": ["CoveSideTable-LightOak_01.jpg", "CoveSideTable_LightOak.jpg"],
+          "tags": ["Category_Table", "Color_Light_Oak", "Material_Light_Oak", "Price_Under500", "Room_LivingRoom", "Type_Side_Table"],
+          "description": "A compact side table in light oak, simple and sturdy enough for everyday use beside a sofa or bed."
+        },
+        {
+          "handle": "cove-side-table-pine",
+          "title": "Cove Side Table Pine",
+          "price": "270.00",
+          "sku": "COVE_SIDE_TABLE_PINE",
+          "images": ["CoveSideTable-Pine_01.jpg", "CoveSideTable-Pine_02.jpg"],
+          "tags": ["Category_Table", "Color_Pine", "Material_Pine", "Price_Under500", "Room_LivingRoom", "Type_Side_Table"],
+          "description": "A compact side table in natural pine, simple and sturdy enough for everyday use beside a sofa or bed."
+        }
+      ]
+    },
+    {
+      "mergedHandle": "edith-armchair",
+      "products": [
+        {
+          "handle": "edith-armchair-ivory",
+          "title": "Edith Armchair Ivory",
+          "price": "1134.00",
+          "sku": "EDITH_ARMCHAIR_IVORY",
+          "images": ["EdithIvory2.jpg", "EdithIvory1.jpg"],
+          "tags": ["Category_Chair", "Color_Ivory", "Material_Fabric", "Price_500to1500", "Room_LivingRoom", "Type_Armchair"],
+          "description": "The Edith armchair in soft ivory upholstery — a lighter take on a classic, deep-seated silhouette."
+        },
+        {
+          "handle": "edith-armchair-tan-leather",
+          "title": "Edith Armchair - Tan Leather",
+          "price": "1770.00",
+          "sku": "EDITH_ARMCHAIR_TAN_LEATHER",
+          "images": ["2_87c35f3d-4b0f-4cc3-af00-28814a865b49.png", "4_25c0943f-635c-4507-89ee-6fd25a473a5f.png"],
+          "tags": ["Category_Chair", "Color_Tan", "Material_Leather", "Price_1500Plus", "Room_LivingRoom", "Type_Armchair"],
+          "description": "A tan leather armchair that ages beautifully — rich, warm, and built to become the best seat in the house."
+        }
+      ]
+    },
+    {
+      "mergedHandle": "eli-side-table",
+      "products": [
+        {
+          "handle": "eli-side-table-light-oak",
+          "title": "Eli Side Table Light Oak",
+          "price": "294.00",
+          "sku": "ELI_SIDE_TABLE_LIGHT_OAK",
+          "images": ["EliSideTable-LightOak_01.jpg", "EliSideTable_LightOak.jpg"],
+          "tags": ["Category_Table", "Color_Light_Oak", "Material_Light_Oak", "Price_Under500", "Room_LivingRoom", "Type_Side_Table"],
+          "description": "A compact side table in light oak, sized to slot beside a sofa or armchair without taking up visual space."
+        },
+        {
+          "handle": "eli-side-table-sangria",
+          "title": "Eli Side Table Sangria",
+          "price": "367.50",
+          "sku": "ELI_SIDE_TABLE_SANGRIA",
+          "images": ["EliSideTable-Sangria_01.jpg"],
+          "tags": ["Category_Table", "Color_Sangria", "Material_Steel", "Price_Under500", "Room_LivingRoom", "Type_Side_Table"],
+          "description": "A compact side table in a bold sangria red, perfect for adding a pop of colour beside a sofa or armchair."
+        }
+      ]
+    },
+    {
+      "mergedHandle": "ester-armchair",
+      "products": [
+        {
+          "handle": "ester-armchair-otto-natural",
+          "title": "Ester Armchair - Otto Natural",
+          "price": "714.00",
+          "sku": "ESTER_ARMCHAIR_OTTO_NATURAL",
+          "images": ["EsterNatural2.jpg", "EsterNatural1.jpg"],
+          "tags": ["Category_Chair", "Color_Natural", "Material_Otto_Fabric", "Price_500to1500", "Room_LivingRoom", "Type_Armchair"],
+          "description": "A relaxed, rounded armchair upholstered in natural Otto fabric, built for everyday lounging."
+        },
+        {
+          "handle": "ester-armchair-oyster",
+          "title": "Ester Armchair Oyster",
+          "price": "714.00",
+          "sku": "ESTER_ARMCHAIR_OYSTER",
+          "images": ["EsterOyster2.jpg", "EsterOyster1.jpg"],
+          "tags": ["Category_Chair", "Color_Oyster", "Material_Fabric", "Price_500to1500", "Room_LivingRoom", "Type_Armchair"],
+          "description": "A relaxed, rounded armchair upholstered in soft oyster fabric, built for everyday lounging."
+        }
+      ]
+    },
+    {
+      "mergedHandle": "fern-coffee-table",
+      "products": [
+        {
+          "handle": "fern-coffee-table-light-oak",
+          "title": "Fern Coffee Table Light Oak",
+          "price": "654.00",
+          "sku": "FERN_COFFEE_TABLE_LIGHT_OAK",
+          "images": ["FernCoffeeTable-LightOak_01.jpg", "Fern_Coffee_Table_LightOak.jpg"],
+          "tags": ["Category_Table", "Color_Light_Oak", "Material_Light_Oak", "Price_500to1500", "Room_LivingRoom", "Type_Coffee_Table"],
+          "description": "An organic-shaped coffee table in light oak, with soft edges that suit a relaxed, contemporary living room."
+        },
+        {
+          "handle": "fern-coffee-table-smoke-oak",
+          "title": "Fern Coffee Table Smoke Oak",
+          "price": "817.50",
+          "sku": "FERN_COFFEE_TABLE_SMOKE_OAK",
+          "images": ["FernCoffeeTable-SmokeOak_01.jpg", "FernCoffeeTable_SmokeOak.jpg"],
+          "tags": ["Category_Table", "Color_Smoke_Oak", "Material_Smoke_Oak", "Price_500to1500", "Room_LivingRoom", "Type_Coffee_Table"],
+          "description": "An organic-shaped coffee table in smoke oak, with soft edges that suit a relaxed, contemporary living room."
+        }
+      ]
+    },
+    {
+      "mergedHandle": "haze-armchair",
+      "products": [
+        {
+          "handle": "haze-armchair-chalk",
+          "title": "Haze Armchair Chalk",
+          "price": "1170.00",
+          "sku": "HAZE_ARMCHAIR_CHALK",
+          "images": ["HazeChalk2.jpg", "HazeChalk1.jpg"],
+          "tags": ["Category_Chair", "Color_Chalk", "Material_Fabric", "Price_500to1500", "Room_LivingRoom", "Type_Armchair"],
+          "description": "A wide, low-slung armchair in chalk-toned fabric, with a relaxed silhouette built for lingering."
+        },
+        {
+          "handle": "haze-armchair-haze",
+          "title": "Haze Armchair Haze",
+          "price": "1170.00",
+          "sku": "HAZE_ARMCHAIR_HAZE",
+          "images": ["HazeinHaze2.jpg", "HazeinHaze1.jpg"],
+          "tags": ["Category_Chair", "Color_Haze", "Material_Fabric", "Price_500to1500", "Room_LivingRoom", "Type_Armchair"],
+          "description": "A wide, low-slung armchair in soft haze-toned fabric, with a relaxed silhouette built for lingering."
+        }
+      ]
+    },
+    {
+      "mergedHandle": "leo-short-plinth",
+      "products": [
+        {
+          "handle": "leo-short-plinth-light-oak",
+          "title": "Leo Short Plinth Light Oak",
+          "price": "294.00",
+          "sku": "LEO_SHORT_PLINTH_LIGHT_OAK",
+          "images": ["LeoShortPlinth-LightOak_01.jpg", "Leo_Small_Oak_Plinth.png"],
+          "tags": ["Category_Table", "Color_Light_Oak", "Material_Light_Oak", "Price_Under500", "Room_Bedroom", "Size_Short", "Type_Bedside_Table"],
+          "description": "A minimalist bedside plinth in light oak — sized to sit low and quiet beside the bed without competing for attention."
+        },
+        {
+          "handle": "leo-short-plinth-smoke-oak",
+          "title": "Leo Short Plinth Smoke Oak",
+          "price": "367.50",
+          "sku": "LEO_SHORT_PLINTH_SMOKE_OAK",
+          "images": ["LeoShortPlinth-SmokeOak_01.jpg"],
+          "tags": ["Category_Table", "Color_Smoke_Oak", "Material_Smoke_Oak", "Price_Under500", "Room_Bedroom", "Size_Short", "Type_Bedside_Table"],
+          "description": "A minimalist bedside plinth in smoke oak — sized to sit low and quiet beside the bed without competing for attention."
+        }
+      ]
+    },
+    {
+      "mergedHandle": "otis-coffee-table",
+      "products": [
+        {
+          "handle": "otis-coffee-table-light-oak",
+          "title": "Otis Coffee Table Light Oak",
+          "price": "714.00",
+          "sku": "OTIS_COFFEE_TABLE_LIGHT_OAK",
+          "images": ["OtisCoffeeTable-LightOak_01.jpg", "OtisCoffeTable_LightOak.jpg"],
+          "tags": ["Category_Table", "Color_Light_Oak", "Material_Light_Oak", "Price_500to1500", "Room_LivingRoom", "Type_Coffee_Table"],
+          "description": "A sculptural coffee table in light oak, with a rounded silhouette that anchors a living room without overwhelming it."
+        },
+        {
+          "handle": "otis-coffee-table-smoke-oak",
+          "title": "Otis Coffee Table Smoke Oak",
+          "price": "714.00",
+          "sku": "OTIS_COFFEE_TABLE_SMOKE_OAK",
+          "images": ["OtisCoffeeTable-SmokeOak_01.jpg", "OtisCoffeeTable_SmokeOak.jpg"],
+          "tags": ["Category_Table", "Color_Smoke_Oak", "Material_Smoke_Oak", "Price_500to1500", "Room_LivingRoom", "Type_Coffee_Table"],
+          "description": "A sculptural coffee table in smoke oak, with a rounded silhouette that anchors a living room without overwhelming it."
+        }
+      ]
+    },
+    {
+      "mergedHandle": "pia-armchair",
+      "products": [
+        {
+          "handle": "pia-armchair-chalk",
+          "title": "Pia Armchair Chalk",
+          "price": "1194.00",
+          "sku": "PIA_ARMCHAIR_CHALK",
+          "images": ["PiaChalk2.jpg", "PiaChalk1.jpg"],
+          "tags": ["Category_Chair", "Color_Chalk", "Material_Fabric", "Price_500to1500", "Room_LivingRoom", "Type_Armchair"],
+          "description": "A statement armchair with a sculptural silhouette, upholstered in soft chalk-toned fabric."
+        },
+        {
+          "handle": "pia-armchair-haze",
+          "title": "Pia Armchair Haze",
+          "price": "1194.00",
+          "sku": "PIA_ARMCHAIR_HAZE",
+          "images": ["PiaHaze2.jpg", "PiaHaze1.jpg"],
+          "tags": ["Category_Chair", "Color_Haze", "Material_Fabric", "Price_500to1500", "Room_LivingRoom", "Type_Armchair"],
+          "description": "A statement armchair with a sculptural silhouette, upholstered in soft haze-toned fabric."
+        }
+      ]
+    }
+  ]
+}

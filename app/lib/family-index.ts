@@ -1,7 +1,8 @@
 import { gql, type StorefrontApi } from "@shopify/hydrogen";
 
-import { pieceKey } from "./product-family";
+import { familyKey, pieceKey, type FamilyMember } from "./product-family";
 import { getStorefrontClient } from "./storefront";
+import { swatchFromTags } from "./swatches";
 
 const FAMILY_INDEX_QUERY = gql(`
   query FamilyIndex {
@@ -10,12 +11,18 @@ const FAMILY_INDEX_QUERY = gql(`
         handle
         title
         tags
+        featuredImage {
+          url
+        }
       }
     }
   }
 `);
 
 type FamilyIndexQuery = StorefrontApi.ResultOf<typeof FAMILY_INDEX_QUERY>;
+
+/** Serializable shape — a Map cannot cross the server/client boundary. */
+export type SerializedFamilyIndex = Array<[string, FamilyMember[]]>;
 
 /** One way a piece is made, where the same piece comes in more than one. */
 export type PieceOption = {
@@ -28,6 +35,7 @@ export type PieceOption = {
 export type SerializedPieceIndex = Array<[string, PieceOption[]]>;
 
 export type StoreIndex = {
+  families: SerializedFamilyIndex;
   pieces: SerializedPieceIndex;
 };
 
@@ -45,34 +53,51 @@ function variantLabel(tags: readonly string[]) {
 }
 
 /**
- * The sizes a piece is made in, indexed across the catalogue.
+ * Both indexes off one round trip.
  *
- * `pieces` groups by `pieceKey`, which catches the same piece made in two
- * sizes: "Leo Short Plinth" and "Leo Tall Plinth" are one plinth, short or
- * tall, and the product page offers that as a choice. Colourways used to be
- * indexed here too, by stripping finish words off titles — they are Shopify
- * variants now, and a product carries its own.
+ * `families` groups the colourways of a listing — "Ester Armchair Oyster" and
+ * "Ester Armchair - Otto Natural" are one piece in two fabrics. `pieces` groups
+ * a level looser, by `pieceKey`, which is what catches the same piece made in
+ * two sizes: "Leo Short Plinth" and "Leo Tall Plinth" are one plinth, short or
+ * tall, and the product page offers that as a choice.
  */
 export async function loadStoreIndex(): Promise<StoreIndex> {
   const storefront = await getStorefrontClient();
   const { data } = await storefront.graphql(FAMILY_INDEX_QUERY);
   const result = data as FamilyIndexQuery | null | undefined;
 
+  const groups = new Map<string, FamilyMember[]>();
   const pieces = new Map<string, PieceOption[]>();
 
   for (const node of result?.products.nodes ?? []) {
     const tags = node.tags ?? [];
-    // One entry per way the piece is made, not per listing.
+    const swatch = swatchFromTags(tags);
+    const key = familyKey(node.title);
+    const member: FamilyMember = {
+      handle: node.handle,
+      title: node.title,
+      hex: swatch?.hex ?? null,
+      colorName: swatch?.name ?? null,
+      imageUrl: node.featuredImage?.url ?? null,
+    };
+    const existing = groups.get(key);
+    if (existing) existing.push(member);
+    else groups.set(key, [member]);
+
+    // One entry per way the piece is made, not per listing: three of the four
+    // Leo plinths are the same two sizes in different oaks.
     const label = variantLabel(tags);
     if (!label) continue;
-    const key = pieceKey(node.title, tags);
-    const pieceGroup = pieces.get(key);
-    if (!pieceGroup) pieces.set(key, [{ handle: node.handle, title: node.title, label }]);
+    const pieceGroup = pieces.get(pieceKey(node.title, tags));
+    if (!pieceGroup) pieces.set(pieceKey(node.title, tags), [{ handle: node.handle, title: node.title, label }]);
     else if (!pieceGroup.some((option) => option.label === label)) {
       pieceGroup.push({ handle: node.handle, title: node.title, label });
     }
   }
 
   // Only groups offering a choice are worth shipping to the client.
-  return { pieces: [...pieces].filter(([, options]) => options.length > 1) };
+  return {
+    families: [...groups].filter(([, members]) => members.length > 1),
+    pieces: [...pieces].filter(([, options]) => options.length > 1),
+  };
 }
