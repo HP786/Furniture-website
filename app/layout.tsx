@@ -8,6 +8,7 @@ import { CartDrawer } from "./components/CartDrawer";
 import { ConsentBanner } from "./components/ConsentBanner";
 import { FamilyProvider } from "./components/FamilyProvider";
 import { Footer } from "./components/Footer";
+import { GoogleAnalytics } from "./components/GoogleAnalytics";
 import { Header } from "./components/Header";
 import { MobileTabBar } from "./components/MobileTabBar";
 import { Providers } from "./components/Providers";
@@ -48,6 +49,11 @@ export const metadata: Metadata = {
     description:
       "Sofas, armchairs, ottomans and solid oak tables in bouclé, Otto fabric, leather and oak. Free fabric samples, white-glove delivery.",
   },
+  // Proves this domain to Google, for Merchant Center and Search Console.
+  // Google re-checks it periodically, so it stays.
+  verification: {
+    google: "-oNamDg0rPwdIjTn5zUeZ1A9QXHC3k4sylzP-NqsQ_o",
+  },
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
@@ -61,6 +67,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   const navigation = buildNavigation(collectionIndex.byHandle);
   const analyticsDebug = process.env.PUBLIC_ANALYTICS_DEBUG === "1";
+  // Unset in development and on a fresh clone, where the tag simply does not
+  // load — rule 13, every paid or external service off until configured.
+  const ga4Id = process.env.NEXT_PUBLIC_GA4_ID;
 
   return (
     <html lang="en" className={`${jost.variable} ${figtree.variable}`}>
@@ -99,6 +108,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <MobileTabBar />
           <CartDrawer />
           <ConsentBanner forceShow={process.env.MOCK_SHOP === "1"} />
+          {ga4Id ? <GoogleAnalytics measurementId={ga4Id} currency="AUD" /> : null}
           {analyticsDebug ? <AnalyticsDebugOverlay /> : null}
         </Providers>
       </body>
