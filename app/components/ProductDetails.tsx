@@ -17,6 +17,7 @@ import { useColourways, usePieceOptions } from "./FamilyProvider";
 import type { PRODUCT_QUERY } from "../products/[handle]/page";
 import { ProductViewedTracker } from "./AnalyticsTrackers";
 import { ProductCard } from "./ProductCard";
+import { ModelBadge, ProductModelViewer, type ProductModel } from "./ProductModelViewer";
 import { RoomTagLink } from "./RoomTag";
 import { Icon, ICON_PATHS } from "./WalnutMark";
 
@@ -49,6 +50,30 @@ function selectedOptionValue(option: { values: Array<{ selected: boolean; name: 
 
 function swatchImageUrl(value: ProductData["options"][number]["optionValues"][number]) {
   return value.swatch?.image?.previewImage?.url ?? null;
+}
+
+/**
+ * The product's 3D model, or null where it has none.
+ *
+ * Shopify returns one source per format: the .glb every browser renders, and
+ * the .usdz iOS wants for AR, derived from the same upload. A product with no
+ * model comes back as an empty media list and the gallery stays photographs.
+ */
+function modelFrom(product: ProductData): ProductModel | null {
+  for (const node of product.media?.nodes ?? []) {
+    if (!node || !("sources" in node)) continue;
+    const sources = node.sources ?? [];
+    const glb = sources.find((source) => source.format === "glb") ?? sources[0];
+    if (!glb) continue;
+
+    return {
+      src: glb.url,
+      iosSrc: sources.find((source) => source.format === "usdz")?.url ?? null,
+      poster: node.previewImage?.url ?? null,
+      alt: node.alt ?? `${product.title} in 3D`,
+    };
+  }
+  return null;
 }
 
 /**
@@ -121,6 +146,11 @@ function ProductGallery({
     );
   }, [product, selectedVariant]);
 
+  // A product that has a 3D model leads with it — the piece turned by hand
+  // beats any photograph of it. Products without one are unchanged.
+  const model = useMemo(() => modelFrom(product), [product]);
+  const slideCount = images.length + (model ? 1 : 0);
+
   const onScroll = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
@@ -131,10 +161,10 @@ function ProductGallery({
     (index: number) => {
       const track = trackRef.current;
       if (!track) return;
-      const clamped = (index + images.length) % images.length;
+      const clamped = (index + slideCount) % slideCount;
       track.scrollTo({ left: clamped * track.clientWidth, behavior: "smooth" });
     },
-    [images.length],
+    [slideCount],
   );
 
   if (images.length === 0) {
@@ -154,12 +184,23 @@ function ProductGallery({
           tabIndex={0}
           aria-label={`${product.title} gallery images`}
         >
+          {model ? (
+            <div
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`1 of ${slideCount}: 3D model`}
+              className="w-full shrink-0 snap-center contain-paint"
+            >
+              <ProductModelViewer model={model} />
+            </div>
+          ) : null}
+
           {images.map((image, index) => (
             <div
               key={image.url}
               role="group"
               aria-roledescription="slide"
-              aria-label={`${index + 1} of ${images.length}`}
+              aria-label={`${index + 1 + (model ? 1 : 0)} of ${slideCount}`}
               className="w-full shrink-0 snap-center contain-paint"
             >
               <div className="aspect-[4/5] overflow-hidden rounded-lg">
@@ -180,7 +221,7 @@ function ProductGallery({
           ))}
         </div>
 
-        {images.length > 1 ? (
+        {slideCount > 1 ? (
           <>
             <div className="pointer-events-none absolute inset-y-0 start-4 end-4 hidden items-center justify-between md:flex">
               <RoundControl
@@ -202,23 +243,47 @@ function ProductGallery({
               className="text-on-surface absolute bottom-4 start-4 rounded-full bg-[color:rgb(253_251_248/0.92)] px-3 py-1.5 text-[12.5px] tabular-nums"
               aria-hidden="true"
             >
-              {Math.min(active + 1, images.length)}/{images.length}
+              {Math.min(active + 1, slideCount)}/{slideCount}
             </span>
           </>
         ) : null}
       </div>
 
-      {images.length > 1 ? (
+      {slideCount > 1 ? (
         <ul role="list" className="grid grid-cols-5 gap-2.5 md:gap-3.5">
-          {images.slice(0, 5).map((image, index) => (
+          {model ? (
+            <li>
+              <button
+                type="button"
+                onClick={() => goTo(0)}
+                aria-label="Show the 3D model"
+                aria-current={active === 0 ? "true" : undefined}
+                className={`bg-surface-secondary focus-visible:outline-accent relative block aspect-square w-full cursor-pointer overflow-hidden rounded-lg border-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors ${
+                  active === 0 ? "border-on-surface" : "border-transparent"
+                }`}
+              >
+                {model.poster ? (
+                  <img
+                    src={model.poster}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : null}
+                <ModelBadge />
+              </button>
+            </li>
+          ) : null}
+
+          {images.slice(0, model ? 4 : 5).map((image, index) => (
             <li key={`thumb-${image.url}`}>
               <button
                 type="button"
-                onClick={() => goTo(index)}
+                onClick={() => goTo(index + (model ? 1 : 0))}
                 aria-label={`Show image ${index + 1}`}
-                aria-current={index === active ? "true" : undefined}
+                aria-current={index + (model ? 1 : 0) === active ? "true" : undefined}
                 className={`bg-surface-secondary focus-visible:outline-accent block aspect-square w-full cursor-pointer overflow-hidden rounded-lg border-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors ${
-                  index === active ? "border-on-surface" : "border-transparent"
+                  index + (model ? 1 : 0) === active ? "border-on-surface" : "border-transparent"
                 }`}
               >
                 <img

@@ -77,6 +77,29 @@ export const PRODUCT_QUERY = gql(
             height
           }
         }
+        # 3D models, where a product has one. A .glb uploaded to the product in
+        # Shopify arrives here; Shopify also derives the .usdz that iOS needs
+        # for AR, so both come from the one upload. Products without a model
+        # return an empty list and the gallery carries on with photographs.
+        media(first: 12) {
+          nodes {
+            ... on Model3d {
+              id
+              alt
+              sources {
+                url
+                format
+                mimeType
+              }
+              previewImage {
+                url
+                altText
+                width
+                height
+              }
+            }
+          }
+        }
         priceRange {
           minVariantPrice {
             amount
