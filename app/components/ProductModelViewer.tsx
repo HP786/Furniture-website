@@ -31,6 +31,11 @@ declare module "react" {
           "environment-image"?: string;
           exposure?: string;
           loading?: string;
+          "camera-orbit"?: string;
+          "field-of-view"?: string;
+          "camera-target"?: string;
+          "min-field-of-view"?: string;
+          "interaction-prompt"?: string;
           reveal?: string;
         },
         HTMLElement
@@ -88,7 +93,11 @@ export function ProductModelViewer({ model }: { model: ProductModel }) {
     );
   }
 
+  // The wrapper owns the aspect ratio and the viewer fills it: model-viewer
+  // sizes its canvas from a definite height, and an aspect-ratio alone does
+  // not give it one — the model ends up adrift at the top of the pane.
   return (
+    <div className="aspect-[4/5] w-full">
     <model-viewer
       src={model.src}
       ios-src={model.iosSrc ?? undefined}
@@ -99,16 +108,24 @@ export function ProductModelViewer({ model }: { model: ProductModel }) {
       camera-controls
       touch-action="pan-y"
       shadow-intensity="1"
-      exposure="1"
+      exposure="1.05"
       loading="eager"
-      className="bg-surface-secondary block aspect-[4/5] w-full overflow-hidden rounded-lg"
+
+
+
+      camera-orbit="22deg 76deg 118%"
+      camera-target="auto auto auto"
+      interaction-prompt="none"
+      className="bg-surface-secondary block h-full w-full overflow-hidden rounded-lg"
       style={
         {
           "--poster-color": "transparent",
-          "--progress-bar-color": "var(--color-interactive)",
+          "--progress-bar-color": "var(--color-border)",
+          "--progress-bar-height": "2px",
         } as CSSProperties
       }
     />
+    </div>
   );
 }
 

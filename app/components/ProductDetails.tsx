@@ -17,6 +17,7 @@ import { useColourways, usePieceOptions } from "./FamilyProvider";
 import type { PRODUCT_QUERY } from "../products/[handle]/page";
 import { ProductViewedTracker } from "./AnalyticsTrackers";
 import { ProductCard } from "./ProductCard";
+import LOCAL_MODELS from "../lib/local-models.json";
 import { ModelBadge, ProductModelViewer, type ProductModel } from "./ProductModelViewer";
 import { RoomTagLink } from "./RoomTag";
 import { Icon, ICON_PATHS } from "./WalnutMark";
@@ -55,9 +56,12 @@ function swatchImageUrl(value: ProductData["options"][number]["optionValues"][nu
 /**
  * The product's 3D model, or null where it has none.
  *
- * Shopify returns one source per format: the .glb every browser renders, and
- * the .usdz iOS wants for AR, derived from the same upload. A product with no
- * model comes back as an empty media list and the gallery stays photographs.
+ * Shopify comes first: a .glb uploaded to the product arrives with the .usdz
+ * Shopify derives for iOS AR, and that pair is always preferred. Failing that,
+ * the models built from the spec sheet by `scripts/build-models.py` are served
+ * from /models — no AR on iOS for those, since nothing generates the .usdz.
+ *
+ * A product in neither place keeps its photographs, which is most of them.
  */
 function modelFrom(product: ProductData): ProductModel | null {
   for (const node of product.media?.nodes ?? []) {
@@ -73,6 +77,16 @@ function modelFrom(product: ProductData): ProductModel | null {
       alt: node.alt ?? `${product.title} in 3D`,
     };
   }
+
+  if (LOCAL_MODELS.includes(product.handle)) {
+    return {
+      src: `/models/${product.handle}.glb`,
+      iosSrc: null,
+      poster: product.featuredImage?.url ?? null,
+      alt: `${product.title} in 3D`,
+    };
+  }
+
   return null;
 }
 

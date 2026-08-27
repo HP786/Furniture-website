@@ -1,0 +1,224 @@
+[
+  {
+    "handle": "alfie-armchair-boucle",
+    "title": "Alfie Armchair Bouclé",
+    "type": "armchair",
+    "colour": "natural"
+  },
+  {
+    "handle": "alfie-armchair-haze",
+    "title": "Alfie Armchair Haze",
+    "type": "armchair",
+    "colour": "haze"
+  },
+  {
+    "handle": "ark-sofa-boucle",
+    "title": "Ark Sofa Bouclé",
+    "type": "sofa",
+    "colour": "natural"
+  },
+  {
+    "handle": "bert-ottoman-boucle",
+    "title": "Bert Ottoman Bouclé",
+    "type": "ottoman",
+    "colour": "natural"
+  },
+  {
+    "handle": "bert-ottoman-oyster",
+    "title": "Bert Ottoman Oyster",
+    "type": "ottoman",
+    "colour": "oyster"
+  },
+  {
+    "handle": "bower-coffee-table-oak",
+    "title": "Bower Coffee Table Oak",
+    "type": "coffee_table",
+    "colour": "oak"
+  },
+  {
+    "handle": "clem-coffee-table-light-oak",
+    "title": "Clem Coffee Table Light Oak",
+    "type": "coffee_table",
+    "colour": "light_oak"
+  },
+  {
+    "handle": "clem-coffee-table-smoke-oak",
+    "title": "Clem Coffee Table Smoke Oak",
+    "type": "coffee_table",
+    "colour": "smoke_oak"
+  },
+  {
+    "handle": "cove-side-table-clay",
+    "title": "Cove Side Table Clay",
+    "type": "side_table",
+    "colour": "clay"
+  },
+  {
+    "handle": "cove-side-table-cream",
+    "title": "Cove Side Table Cream",
+    "type": "side_table",
+    "colour": "cream"
+  },
+  {
+    "handle": "cove-side-table-light-oak",
+    "title": "Cove Side Table Light Oak",
+    "type": "side_table",
+    "colour": "light_oak"
+  },
+  {
+    "handle": "cove-side-table-pine",
+    "title": "Cove Side Table Pine",
+    "type": "side_table",
+    "colour": "pine"
+  },
+  {
+    "handle": "eclipse-round-dining-table-oak",
+    "title": "Eclipse Round Dining Table Oak",
+    "type": "dining_table",
+    "colour": "oak"
+  },
+  {
+    "handle": "edith-armchair-tan-leather",
+    "title": "Edith Armchair - Tan Leather",
+    "type": "armchair",
+    "colour": "tan"
+  },
+  {
+    "handle": "edith-armchair-ivory",
+    "title": "Edith Armchair Ivory",
+    "type": "armchair",
+    "colour": "ivory"
+  },
+  {
+    "handle": "eli-side-table-light-oak",
+    "title": "Eli Side Table Light Oak",
+    "type": "side_table",
+    "colour": "light_oak"
+  },
+  {
+    "handle": "eli-side-table-sangria",
+    "title": "Eli Side Table Sangria",
+    "type": "side_table",
+    "colour": "sangria"
+  },
+  {
+    "handle": "ester-armchair-otto-natural",
+    "title": "Ester Armchair - Otto Natural",
+    "type": "armchair",
+    "colour": "natural"
+  },
+  {
+    "handle": "ester-armchair-oyster",
+    "title": "Ester Armchair Oyster",
+    "type": "armchair",
+    "colour": "oyster"
+  },
+  {
+    "handle": "fern-coffee-table-light-oak",
+    "title": "Fern Coffee Table Light Oak",
+    "type": "coffee_table",
+    "colour": "light_oak"
+  },
+  {
+    "handle": "fern-coffee-table-smoke-oak",
+    "title": "Fern Coffee Table Smoke Oak",
+    "type": "coffee_table",
+    "colour": "smoke_oak"
+  },
+  {
+    "handle": "freddy-armchair-boucle",
+    "title": "Freddy Armchair Bouclé",
+    "type": "armchair",
+    "colour": "natural"
+  },
+  {
+    "handle": "haze-armchair-chalk",
+    "title": "Haze Armchair Chalk",
+    "type": "armchair",
+    "colour": "chalk"
+  },
+  {
+    "handle": "haze-armchair-haze",
+    "title": "Haze Armchair Haze",
+    "type": "armchair",
+    "colour": "haze"
+  },
+  {
+    "handle": "leo-short-plinth-light-oak",
+    "title": "Leo Short Plinth Light Oak",
+    "type": "bedside_table",
+    "colour": "light_oak"
+  },
+  {
+    "handle": "leo-short-plinth-smoke-oak",
+    "title": "Leo Short Plinth Smoke Oak",
+    "type": "bedside_table",
+    "colour": "smoke_oak"
+  },
+  {
+    "handle": "leo-tall-plinth-light-oak",
+    "title": "Leo Tall Plinth Light Oak",
+    "type": "bedside_table",
+    "colour": "light_oak"
+  },
+  {
+    "handle": "loft-sofa-chalk",
+    "title": "Loft Sofa Chalk",
+    "type": "sofa",
+    "colour": "chalk"
+  },
+  {
+    "handle": "nel-armchair-boucle",
+    "title": "Nel Armchair Bouclé",
+    "type": "armchair",
+    "colour": "natural"
+  },
+  {
+    "handle": "nico-sofa-haze",
+    "title": "Nico Sofa Haze",
+    "type": "sofa",
+    "colour": "haze"
+  },
+  {
+    "handle": "otis-coffee-table-light-oak",
+    "title": "Otis Coffee Table Light Oak",
+    "type": "coffee_table",
+    "colour": "light_oak"
+  },
+  {
+    "handle": "otis-coffee-table-smoke-oak",
+    "title": "Otis Coffee Table Smoke Oak",
+    "type": "coffee_table",
+    "colour": "smoke_oak"
+  },
+  {
+    "handle": "pia-armchair-chalk",
+    "title": "Pia Armchair Chalk",
+    "type": "armchair",
+    "colour": "chalk"
+  },
+  {
+    "handle": "pia-armchair-haze",
+    "title": "Pia Armchair Haze",
+    "type": "armchair",
+    "colour": "haze"
+  },
+  {
+    "handle": "pond-ottoman-boucle",
+    "title": "Pond Ottoman Bouclé",
+    "type": "ottoman",
+    "colour": "natural"
+  },
+  {
+    "handle": "post-bedside-table-oak",
+    "title": "Post Bedside Table Oak",
+    "type": "bedside_table",
+    "colour": "oak"
+  },
+  {
+    "handle": "tate-armchair-walnut",
+    "title": "Tate Armchair - Walnut",
+    "type": "armchair",
+    "colour": "walnut"
+  }
+]
