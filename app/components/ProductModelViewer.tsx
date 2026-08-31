@@ -110,9 +110,6 @@ export function ProductModelViewer({ model }: { model: ProductModel }) {
       shadow-intensity="1"
       exposure="1.05"
       loading="eager"
-
-
-
       camera-orbit="22deg 76deg 118%"
       camera-target="auto auto auto"
       interaction-prompt="none"
@@ -124,7 +121,25 @@ export function ProductModelViewer({ model }: { model: ProductModel }) {
           "--progress-bar-height": "2px",
         } as CSSProperties
       }
-    />
+    >
+      <button slot="ar-button" className="ar-button" type="button">
+        <svg
+          width="17"
+          height="17"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M3 8V5.5A2.5 2.5 0 0 1 5.5 3H8M16 3h2.5A2.5 2.5 0 0 1 21 5.5V8M21 16v2.5a2.5 2.5 0 0 1-2.5 2.5H16M8 21H5.5A2.5 2.5 0 0 1 3 18.5V16" />
+          <path d="m12 8.8 3.4 1.85v3.7L12 16.2l-3.4-1.85v-3.7Z" />
+        </svg>
+        View in your room
+      </button>
+    </model-viewer>
     </div>
   );
 }

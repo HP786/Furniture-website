@@ -317,3 +317,38 @@ body:has(.drawer-right[open]),
 body:has(.drawer-left[open]) {
   overflow: hidden;
 }
+
+/* ─── "View in your room" ────────────────────────────────────────────────────
+   model-viewer only reveals the `ar-button` slot on a device that can actually
+   present AR, so this styling is all the feature detection the button needs:
+   it is simply absent on a desktop, and on a phone it sits over the model
+   where a thumb reaches. */
+.ar-button {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--spacing-touch-target);
+  padding: 0 20px;
+  border: none;
+  border-radius: var(--radius-badge);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-body);
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgb(32 30 29 / 0.22);
+}
+
+.ar-button:active {
+  transform: translateX(-50%) scale(0.97);
+}
+
+.ar-button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

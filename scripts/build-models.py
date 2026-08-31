@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 import re
 from pathlib import Path
 
@@ -291,15 +292,25 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     catalogue = json.loads((ROOT / "scripts" / "model-targets.json").read_text(encoding="utf-8"))
 
+    # A model built properly — in Blender, or scanned — outranks anything this
+    # script assembles, so an existing file is left alone. `--force` overwrites,
+    # for when the spec has changed and the generated models should follow it.
+    force = "--force" in sys.argv
+
     print(f"{'file':<44} {'size':>8}  bounding box (W×D×H cm)   expected")
     print("-" * 104)
 
     built: list[str] = []
+    kept: list[str] = []
     for entry in catalogue:
         if entry["type"] not in BUILDABLE:
             continue
-        mesh = build(entry["type"], entry["colour"])
         path = OUT / f"{entry['handle']}.glb"
+        if path.exists() and not force:
+            kept.append(entry["handle"])
+            built.append(entry["handle"])
+            continue
+        mesh = build(entry["type"], entry["colour"])
         path.write_bytes(trimesh.exchange.gltf.export_glb(trimesh.Scene(mesh)))
 
         size = mesh.extents * 100  # back to centimetres for the report

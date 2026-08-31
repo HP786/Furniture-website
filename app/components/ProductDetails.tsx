@@ -58,8 +58,8 @@ function swatchImageUrl(value: ProductData["options"][number]["optionValues"][nu
  *
  * Shopify comes first: a .glb uploaded to the product arrives with the .usdz
  * Shopify derives for iOS AR, and that pair is always preferred. Failing that,
- * the models built from the spec sheet by `scripts/build-models.py` are served
- * from /models — no AR on iOS for those, since nothing generates the .usdz.
+ * the models under /models are used, where scripts/build-usdz.py writes the
+ * iOS counterpart beside each .glb so AR works on both platforms either way.
  *
  * A product in neither place keeps its photographs, which is most of them.
  */
@@ -81,7 +81,10 @@ function modelFrom(product: ProductData): ProductModel | null {
   if (LOCAL_MODELS.includes(product.handle)) {
     return {
       src: `/models/${product.handle}.glb`,
-      iosSrc: null,
+      // Android reads the .glb, an iPhone will not: Quick Look wants USDZ, and
+      // without one iOS never offers the AR button at all. Written alongside
+      // every .glb by scripts/build-usdz.py.
+      iosSrc: `/models/${product.handle}.usdz`,
       poster: product.featuredImage?.url ?? null,
       alt: `${product.title} in 3D`,
     };
@@ -160,10 +163,23 @@ function ProductGallery({
     );
   }, [product, selectedVariant]);
 
-  // A product that has a 3D model leads with it — the piece turned by hand
-  // beats any photograph of it. Products without one are unchanged.
   const model = useMemo(() => modelFrom(product), [product]);
-  const slideCount = images.length + (model ? 1 : 0);
+
+  /**
+   * The gallery as one list, so a slide, a thumbnail and the counter can never
+   * disagree about what is third.
+   *
+   * The 3D view sits third rather than first: photographs are what a shopper
+   * recognises the piece by, and the model is what they turn once the piece
+   * has their interest. A product with fewer than two photographs puts the
+   * model wherever it runs out.
+   */
+  const slides = useMemo(() => {
+    const photos = images.map((image) => ({ kind: "image" as const, image }));
+    if (!model) return photos;
+    const at = Math.min(2, photos.length);
+    return [...photos.slice(0, at), { kind: "model" as const, model }, ...photos.slice(at)];
+  }, [images, model]);
 
   const onScroll = useCallback(() => {
     const track = trackRef.current;
@@ -174,14 +190,26 @@ function ProductGallery({
   const goTo = useCallback(
     (index: number) => {
       const track = trackRef.current;
-      if (!track) return;
-      const clamped = (index + slideCount) % slideCount;
+      if (!track || slides.length === 0) return;
+      const clamped = (index + slides.length) % slides.length;
       track.scrollTo({ left: clamped * track.clientWidth, behavior: "smooth" });
     },
-    [slideCount],
+    [slides.length],
   );
 
-  if (images.length === 0) {
+  // Choosing a colour moves the gallery to that colour's photograph.
+  const variantImageUrl = selectedVariant?.image?.url ?? null;
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || !variantImageUrl) return;
+    const index = slides.findIndex(
+      (slide) => slide.kind === "image" && slide.image.url === variantImageUrl,
+    );
+    if (index < 0) return;
+    track.scrollTo({ left: index * track.clientWidth, behavior: "smooth" });
+  }, [variantImageUrl, slides]);
+
+  if (slides.length === 0) {
     return (
       <div data-testid="product-gallery" className="bg-surface-secondary aspect-[4/5] rounded-lg" />
     );
@@ -196,46 +224,51 @@ function ProductGallery({
           data-product-gallery-track
           className="scrollbar-none bg-surface-secondary flex snap-x snap-mandatory overflow-x-auto rounded-lg"
           tabIndex={0}
-          aria-label={`${product.title} gallery images`}
+          aria-label={`${product.title} gallery`}
         >
-          {model ? (
+          {slides.map((slide, index) => (
             <div
+              key={slide.kind === "model" ? "model" : slide.image.url}
               role="group"
               aria-roledescription="slide"
-              aria-label={`1 of ${slideCount}: 3D model`}
+              aria-label={
+                slide.kind === "model"
+                  ? `${index + 1} of ${slides.length}: 3D model`
+                  : `${index + 1} of ${slides.length}`
+              }
               className="w-full shrink-0 snap-center contain-paint"
             >
-              <ProductModelViewer model={model} />
-            </div>
-          ) : null}
-
-          {images.map((image, index) => (
-            <div
-              key={image.url}
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`${index + 1 + (model ? 1 : 0)} of ${slideCount}`}
-              className="w-full shrink-0 snap-center contain-paint"
-            >
-              <div className="aspect-[4/5] overflow-hidden rounded-lg">
-                <img
-                  src={shopifyImageUrl(image.url, { width: 1000, height: 1250, crop: "center" })}
-                  srcSet={srcSetFor(image.url, { width: 1000, height: 1250, crop: "center" })}
-                  sizes="(min-width: 768px) 55vw, 100vw"
-                  alt={image.altText ?? product.title}
-                  className="h-full w-full object-cover"
-                  loading={index === 0 ? "eager" : "lazy"}
-                  fetchPriority={index === 0 ? "high" : "auto"}
-                  width={1000}
-                  height={1250}
-                  data-testid={index === 0 ? "product-gallery-image" : undefined}
-                />
-              </div>
+              {slide.kind === "model" ? (
+                <ProductModelViewer model={slide.model} />
+              ) : (
+                <div className="aspect-[4/5] overflow-hidden rounded-lg">
+                  <img
+                    src={shopifyImageUrl(slide.image.url, {
+                      width: 1000,
+                      height: 1250,
+                      crop: "center",
+                    })}
+                    srcSet={srcSetFor(slide.image.url, {
+                      width: 1000,
+                      height: 1250,
+                      crop: "center",
+                    })}
+                    sizes="(min-width: 768px) 55vw, 100vw"
+                    alt={slide.image.altText ?? product.title}
+                    className="h-full w-full object-cover"
+                    loading={index === 0 ? "eager" : "lazy"}
+                    fetchPriority={index === 0 ? "high" : "auto"}
+                    width={1000}
+                    height={1250}
+                    data-testid={index === 0 ? "product-gallery-image" : undefined}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </div>
 
-        {slideCount > 1 ? (
+        {slides.length > 1 ? (
           <>
             <div className="pointer-events-none absolute inset-y-0 start-4 end-4 hidden items-center justify-between md:flex">
               <RoundControl
@@ -257,57 +290,51 @@ function ProductGallery({
               className="text-on-surface absolute bottom-4 start-4 rounded-full bg-[color:rgb(253_251_248/0.92)] px-3 py-1.5 text-[12.5px] tabular-nums"
               aria-hidden="true"
             >
-              {Math.min(active + 1, slideCount)}/{slideCount}
+              {Math.min(active + 1, slides.length)}/{slides.length}
             </span>
           </>
         ) : null}
       </div>
 
-      {slideCount > 1 ? (
+      {slides.length > 1 ? (
         <ul role="list" className="grid grid-cols-5 gap-2.5 md:gap-3.5">
-          {model ? (
-            <li>
+          {slides.slice(0, 5).map((slide, index) => (
+            <li key={slide.kind === "model" ? "thumb-model" : `thumb-${slide.image.url}`}>
               <button
                 type="button"
-                onClick={() => goTo(0)}
-                aria-label="Show the 3D model"
-                aria-current={active === 0 ? "true" : undefined}
+                onClick={() => goTo(index)}
+                aria-label={slide.kind === "model" ? "Show the 3D model" : `Show image ${index + 1}`}
+                aria-current={index === active ? "true" : undefined}
                 className={`bg-surface-secondary focus-visible:outline-accent relative block aspect-square w-full cursor-pointer overflow-hidden rounded-lg border-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors ${
-                  active === 0 ? "border-on-surface" : "border-transparent"
+                  index === active ? "border-on-surface" : "border-transparent"
                 }`}
               >
-                {model.poster ? (
+                {slide.kind === "model" ? (
+                  <>
+                    {slide.model.poster ? (
+                      <img
+                        src={slide.model.poster}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : null}
+                    <ModelBadge />
+                  </>
+                ) : (
                   <img
-                    src={model.poster}
+                    src={shopifyImageUrl(slide.image.url, {
+                      width: 300,
+                      height: 300,
+                      crop: "center",
+                    })}
                     alt=""
                     className="h-full w-full object-cover"
                     loading="lazy"
+                    width={300}
+                    height={300}
                   />
-                ) : null}
-                <ModelBadge />
-              </button>
-            </li>
-          ) : null}
-
-          {images.slice(0, model ? 4 : 5).map((image, index) => (
-            <li key={`thumb-${image.url}`}>
-              <button
-                type="button"
-                onClick={() => goTo(index + (model ? 1 : 0))}
-                aria-label={`Show image ${index + 1}`}
-                aria-current={index + (model ? 1 : 0) === active ? "true" : undefined}
-                className={`bg-surface-secondary focus-visible:outline-accent block aspect-square w-full cursor-pointer overflow-hidden rounded-lg border-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors ${
-                  index + (model ? 1 : 0) === active ? "border-on-surface" : "border-transparent"
-                }`}
-              >
-                <img
-                  src={shopifyImageUrl(image.url, { width: 300, height: 300, crop: "center" })}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                  width={300}
-                  height={300}
-                />
+                )}
               </button>
             </li>
           ))}
