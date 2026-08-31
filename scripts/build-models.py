@@ -67,14 +67,23 @@ SWATCH_HEX = {
 # separating a bouclé sofa from an oiled oak top without textures.
 SOFT_TYPES = {"sofa", "armchair", "ottoman"}
 
-# Only the pieces this approach can do justice to.
+# Every type gets a model.
 #
-# Timber furniture IS primitives — a disc on a pedestal, a plinth, a slab on
-# two legs — so a built model reads as the piece. Upholstery is not: a sofa
-# assembled from rounded boxes reads as a crate, and a bad 3D model of a sofa
-# is worse than a good photograph of one. Seating wants photogrammetry or a
-# real modeller; until then it keeps its photographs.
-BUILDABLE = {"coffee_table", "side_table", "bedside_table", "dining_table"}
+# These are placeholders, and the seating ones look it: a sofa assembled from
+# rounded boxes reads as a crate next to its photograph. They are here so the
+# 3D and AR path is real on every product — right dimensions, right colour,
+# right behaviour — while the models themselves are replaced piece by piece
+# with scans or properly modelled ones. An existing file is never overwritten
+# (see `force`), so a real model dropped in survives every rebuild.
+BUILDABLE = {
+    "coffee_table",
+    "side_table",
+    "bedside_table",
+    "dining_table",
+    "sofa",
+    "armchair",
+    "ottoman",
+}
 
 
 def cm(value: float) -> float:
