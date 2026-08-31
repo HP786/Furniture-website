@@ -352,3 +352,89 @@ body:has(.drawer-left[open]) {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
+
+/* ─── The full-screen 3D view ───────────────────────────────────────────────
+   Turning a model and swiping a carousel are the same gesture, so the model
+   gets a surface of its own where a drag can only mean one thing. */
+.model-dialog {
+  border: none;
+  padding: 0;
+  margin: 0;
+  max-width: none;
+  max-height: none;
+  width: 100vw;
+  height: 100dvh;
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+}
+
+.model-dialog::backdrop {
+  background: rgb(32 30 29 / 0.72);
+}
+
+.model-dialog-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.model-dialog-viewer {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--color-surface-secondary);
+}
+
+.model-dialog-loading {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--color-on-surface-secondary);
+  font-size: 14px;
+}
+
+.model-dialog-close {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  inset-inline-end: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--spacing-touch-target);
+  min-width: var(--spacing-touch-target);
+  border: none;
+  border-radius: var(--radius-badge);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgb(32 30 29 / 0.18);
+}
+
+.model-dialog-close:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Sits above the AR button, which model-viewer pins to the bottom centre. */
+.model-dialog-hint {
+  position: absolute;
+  top: max(24px, env(safe-area-inset-top));
+  inset-inline-start: 20px;
+  margin: 0;
+  color: var(--color-on-surface-secondary);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+@media (min-width: 48rem) {
+  /* On a desktop it is a panel rather than a takeover — the page behind it is
+     still the thing being shopped. */
+  .model-dialog {
+    width: min(880px, 92vw);
+    height: min(760px, 88dvh);
+    margin: auto;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+}
